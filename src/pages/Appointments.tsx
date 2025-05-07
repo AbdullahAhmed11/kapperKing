@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { Plus, Filter, Search, MoreVertical } from 'lucide-react';
 import { useStore } from '@/lib/store';
 
-function Appointments() {
+function () {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [view, setView] = useState<'day' | 'week'>('day');
 

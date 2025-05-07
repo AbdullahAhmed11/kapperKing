@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { SubscriptionPlanForm } from '@/components/platform/forms/SubscriptionPlanForm';
 import { useSubscriptionPlanStore, selectAllPlans } from '@/lib/store/subscriptionPlans';
 import { useThemeStore } from '@/lib/theme'; // Import theme store
+import { EditSub } from '@/components/platform/forms/EditSub';
 
 function SubscriptionPlans() {
   const [showNewPlan, setShowNewPlan] = useState(false);
@@ -248,7 +249,7 @@ useEffect(() => {
   initialData={selectedPlan}
   title="Edit Plan"
 /> */}
-<SubscriptionPlanForm
+<EditSub
   key={selectedPlan?.id || 'edit-plan'}
   open={showEditPlan}
   onClose={() => {
@@ -256,11 +257,10 @@ useEffect(() => {
     setSelectedPlan(null);
   }}
   onPlanAdded={() => {
-    fetchPlans(); // Refresh the plans list after editing
+    setShowEditPlan(false);
+    fetchPlans(); // Refresh the plans list
   }}
-  onSubmit={async (data) => {
-    await updatePlan(selectedPlan.id, data); // Ensure it returns a Promise
-  }} // Pass update function
+  onSubmit={handleEditPlanSubmit} 
   initialData={selectedPlan}
   title="Edit Plan"
 />

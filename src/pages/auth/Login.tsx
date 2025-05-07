@@ -36,7 +36,7 @@ function Login() {
        // AuthProvider handles setting user state via listener or manually for demo
        toast.success('Login successful!');
        // Redirect to the appropriate dashboard (assuming this login is for salon/platform)
-       navigate('/salon'); // Or '/platform' depending on user role check (add later)
+       navigate('/platform'); // Or '/platform' depending on user role check (add later)
     }
   };
 
