@@ -13,8 +13,15 @@ function SalonManagement() {
   const [showEditSalon, setShowEditSalon] = useState(false);
   const [selectedSalon, setSelectedSalon] = useState<any>(null); // Keep any for now, update if SalonForm needs specific type
   const [searchTerm, setSearchTerm] = useState('');
-  const { salons, loading, error, fetchSalons,  } = useSalonStore();
-  // Get data from stores
+  const { 
+    salons, 
+    loading, 
+    error, 
+    fetchSalons,
+    fetchSalonById, // Add this
+    currentSalon // Add this to access the fetched salon
+  } = useSalonStore();  // Get data from stores
+
   // const salons = useSalonStore(selectAllSalons);
   const clients = useClientStore(selectAllClients);
   const plans = useSubscriptionPlanStore(selectAllPlans);
@@ -63,22 +70,54 @@ function SalonManagement() {
     // Error toast for validation failure is also handled in the store action
   };
 
-  // Use correct type and action for editing
-  const handleEditSalonSubmit = async (data: Partial<Omit<Salon, 'id' | 'clientId'>>) => { // Use correct type
-    if (selectedSalon) {
-      updateSalon(selectedSalon.id, data); // Call correct action
-      setShowEditSalon(false);
-      setSelectedSalon(null);
-      // Success toast is in store action
-    } else {
-       toast.error('No salon selected for editing.');
+  const handleEditClick = async (salonId: number) => {
+    try {
+      const salon = await fetchSalonById(salonId);
+      console.log("select", salon);
+      setSelectedSalon(salon);
+      setShowEditSalon(true);
+    } catch (error) {
+      toast.error('Failed to load salon details');
     }
   };
 
+  // Use correct type and action for editing
+  console.log("Editing salon:", selectedSalon);
+  // const handleEditSalonSubmit = async (data: Partial<Omit<Salon, 'id' | 'clientId'>>) => { // Use correct type
+  //   if (selectedSalon) {
+  //     updateSalon(selectedSalon.id, data); // Call correct action
+  //     setShowEditSalon(false);
+  //     setSelectedSalon(null);
+  //     // Success toast is in store action
+  //   } else {
+  //      toast.error('No salon selected for editing.');
+  //   }
+  // };
+  const handleEditSalonSubmit = async (data: {
+    name: string;
+    address: string;
+    city: string;
+    postalCode: string;
+    country: string;
+    salonPhone: string;
+    website?: string;
+  }) => {
+    if (selectedSalon) {
+      try {
+        await updateSalon(selectedSalon.id, data);
+        setShowEditSalon(false);
+        setSelectedSalon(null);
+      } catch (error) {
+        // Error handling is already done in the store
+      }
+    } else {
+      toast.error('No salon selected for editing.');
+    }
+  };
   const handleDeleteSalon = async (salonId: string) => {
     try {
       // TODO: Implement salon deletion logic using store action
-      deleteSalon(salonId);
+      deleteSalon(Number(salonId));
       fetchSalons() // Using store action now
       toast.success('Salon deleted successfully'); // Toast is in store action
     } catch (error) {
@@ -152,7 +191,7 @@ function SalonManagement() {
             const client = clients.find(c => c.id === salon.clientId);
             const plan = client ? plans.find(p => p.id === client.subscriptionPlanId) : null;
             const subscriptionStatus = client?.subscriptionStatus || 'unknown'; 
-
+            console.log(client,"client")
             return (
             <div
               key={salon.id}
@@ -165,17 +204,14 @@ function SalonManagement() {
                   </div>
                   <div className="min-w-0"> {/* Added min-w-0 for truncation */}
                     <h3 className="text-lg font-medium text-gray-900 truncate">{salon.name}</h3> {/* Added truncate */}
-                    <p className="text-sm text-gray-500 truncate">Owner: {client ? `${client.firstName} ${client.lastName}` : 'Unknown'}</p> 
+                    <p className="text-sm text-gray-500 truncate">Owner: {client ? `${client.name}` : 'Unknown'}</p> 
                   </div>
                 </div>
                 <div className="flex space-x-2 flex-shrink-0"> {/* Added flex-shrink-0 */}
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setSelectedSalon(salon);
-                      setShowEditSalon(true);
-                    }}
+                    onClick={() => handleEditClick(salon.id)} 
                   >
                     <Edit2 className="h-4 w-4" />
                   </Button>

@@ -11,7 +11,7 @@ import { Client } from '@/lib/store/clients'; // Import Client type
 
 // Schema for adding/editing a salon, requires selecting a client owner
 const salonSchema = z.object({
-  ownerId: z.string().min(1, 'Please select a client owner'), // Required client ID
+  ownerId: z.coerce.number().min(1, 'Please select a client owner'), // Convert string to number
   name: z.string().min(2, 'Salon name is required'),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -63,6 +63,7 @@ export function SalonForm({
 
   // Reset form when dialog opens or initialData/preselectedClientId changes
   useEffect(() => {
+    console.log(initialData, "initialData")
     if (open) {
       const defaults = {
         ownerId: preselectedClientId || initialData?.ownerId || '',

@@ -66,7 +66,7 @@ import CustomerSettingsPage from './pages/customer/Settings';
 // Microsite Pages
 import SalonMicrosite from './pages/salon/[slug]';
 import SalonBooking from './pages/salon/[slug]/book';
-
+import Appointmentss from './pages/Appointments';
 // No loader needed for BrowserRouter setup
 // const marketingPageLoader = ... (Remove loader)
 
@@ -92,6 +92,9 @@ function App() {
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/about" element={<About />} /> 
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/book-appointment" element={<Appointmentss />} />
+              <Route path="/platform/salons" element={<SalonManagement />} />
+
             </Route>
 
             {/* Auth Routes */}
