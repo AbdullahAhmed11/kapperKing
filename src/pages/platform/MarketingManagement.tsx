@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, Mail, MessageSquare, BarChart2, Send } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,15 +7,48 @@ import { useSubscriberStore, selectSubscriberCount, selectAllSubscribers, Subscr
 import { toast } from 'sonner'; 
 import { CampaignForm } from '@/components/platform/forms/CampaignForm'; 
 import { SubscriberList } from '@/components/platform/marketing/SubscriberList'; 
+const API_BASE_URL = 'https://kapperking.runasp.net/api/SuperAdmin';
 
 export default function MarketingManagement() {
+
+  const [campaigns, setCampaigns] = useState<any[]>([]); // Local state for campaigns
+  const [isLoading, setIsLoading] = useState(true);
+    const fetchCampaigns = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/GetCampains`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch campaigns');
+        }
+        const data: Campaign[] = await response.json();
+        // Add mock stats for demonstration (replace with actual stats from API if available)
+        const campaignsWithStats = data.map(campaign => ({
+          ...campaign,
+          stats: {
+            opened: Math.floor(Math.random() * 1000),
+            clicked: Math.floor(Math.random() * 100),
+            sent: 1000,
+            openRate: Math.random() * 100,
+            clickRate: Math.random() * 10
+          }
+        }));
+        setCampaigns(campaignsWithStats);
+      } catch (err) {
+        toast.error('Failed to load campaigns');
+        console.error('Error fetching campaigns:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCampaignForm, setShowCampaignForm] = useState(false); 
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null); 
   const [activeTab, setActiveTab] = useState<'campaigns' | 'subscribers'>('campaigns'); // State for active tab
 
   // Get data and actions from stores
-  const campaigns = useCampaignStore(selectAllCampaigns);
+  // const campaigns = useCampaignStore(selectAllCampaigns);
   const addCampaign = useCampaignStore((state) => state.addCampaign); 
   const updateCampaign = useCampaignStore((state) => state.updateCampaign); 
   const deleteCampaign = useCampaignStore((state) => state.deleteCampaign);
@@ -63,11 +96,12 @@ export default function MarketingManagement() {
       updateCampaign(editingCampaign.id, data); 
       setEditingCampaign(null);
     } else {
-      addCampaign(data); 
+      addCampaign(8, data); 
+      fetchCampaigns()
     }
     setShowCampaignForm(false); // Close the form
   };
-
+  console.log('Campaigns:', campaigns); // Debugging line
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -246,7 +280,7 @@ export default function MarketingManagement() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {campaign.status === 'sent' && campaign.stats ? (
                         <>
-                          <div>{campaign.lastSent ? new Date(campaign.lastSent).toLocaleDateString() : '-'}</div>
+                          <div>{campaign.sentAt ? new Date(campaign.sentAt).toLocaleDateString() : '-'}</div>
                           <div className="text-xs text-gray-500">({campaign.stats.sent.toLocaleString()} subscribers)</div>
                         </>
                       ) : (

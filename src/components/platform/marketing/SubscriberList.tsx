@@ -27,6 +27,7 @@ export function SubscriberList() {
     toast.success(`Email sent to ${recipient} (simulated).`);
     return true; // Indicate success for now
   };
+  console.log('Subscribers:', subscribers); // Debugging line
 
   return (
     <div className="bg-white shadow rounded-lg border">
