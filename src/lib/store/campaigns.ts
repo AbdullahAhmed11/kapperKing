@@ -91,41 +91,110 @@ export const useCampaignStore = create<CampaignState>((set, get) => ({
     }
   },
 
-  addCampaign: async (salonId, formData) => {
-     set({ loading: true });
-     try {
-        // Map form data to DB schema
-        const dbPayload = {
-           salon_id: salonId,
-           name: formData.name,
-           subject: formData.subject,
-           content: formData.content,
-           type: 'email' as CampaignType, // Default to email for now
-           status: 'draft' as CampaignStatus,
-           target_type: formData.target_type,
-           manual_recipients: formData.target_type === 'manual_list' ? formData.manualRecipientList : null,
-           // TODO: Handle specific_clients targeting (might need separate table or JSON criteria)
-           // TODO: Handle scheduling (set scheduled_at)
-        };
+//   addCampaign: async (salonId, formData) => {
+//      set({ loading: true });
+//      try {
+//         const dbPayload = {
+//            salon_id: salonId,
+//            name: formData.name,
+//            subject: formData.subject,
+//            content: formData.content,
+//            type: 'email' as CampaignType, // Default to email for now
+//            status: 'draft' as CampaignStatus,
+//            target_type: formData.target_type,
+//            manual_recipients: formData.target_type === 'manual_list' ? formData.manualRecipientList : null,
+//            // TODO: Handle specific_clients targeting (might need separate table or JSON criteria)
+//            // TODO: Handle scheduling (set scheduled_at)
+//         };
 
-        const { data: newCampaign, error } = await supabase
-           .from('campaigns')
-           .insert(dbPayload)
-           .select()
-           .single();
+//         const { data: newCampaign, error } = await supabase
+//            .from('campaigns')
+//            .insert(dbPayload)
+//            .select()
+//            .single();
 
-        if (error) throw error;
-        set(state => ({ campaigns: [newCampaign, ...state.campaigns] })); // Add to top
-        toast.success(`Campaign "${newCampaign.name}" created as draft.`);
-        set({ loading: false });
-        return newCampaign;
-     } catch (error: any) {
-        toast.error(`Failed to create campaign: ${error.message}`);
-        set({ loading: false, error: error.message }); 
-        return null;
-     }
-  },
+//         if (error) throw error;
+//         set(state => ({ campaigns: [newCampaign, ...state.campaigns] })); // Add to top
+//         toast.success(`Campaign "${newCampaign.name}" created as draft.`);
+//         set({ loading: false });
+//         return newCampaign;
+//      } catch (error: any) {
+//         toast.error(`Failed to create campaign: ${error.message}`);
+//         set({ loading: false, error: error.message }); 
+//         return null;
+//      }
+//   },
+addCampaign: async (salonId, formData) => {
+  set({ loading: true });
+  try {
+    // Map your form data to the API's expected format
+    const apiPayload = {
+      name: formData.name,
+      body: formData.content,
+      email: "salon@example.com", // Replace with actual salon email
+      isHtml: true,
+      type: "Email",
+      status: "Draft", // Start as draft instead of sent
+      // toAll: formData.target_type === 'all_clients',
+      emails:[ "salon@example.com"]
+    };
 
+    const response = await fetch('https://kapperking.runasp.net/api/SuperAdmin/AddCampain', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Add if needed: 'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(apiPayload)
+    });
+
+    const responseData = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(responseData.message || `API error: ${response.statusText}`);
+    }
+
+    // Debugging: Log the full response
+    console.log('API Response:', responseData);
+
+    // Ensure we have a valid response
+    if (!responseData) {
+      throw new Error('Empty response from server');
+    }
+
+    // Transform the API response to match your Campaign type
+    const transformedCampaign: Campaign = {
+      id: responseData.id || `temp-${Date.now()}`,
+      salon_id: salonId,
+      name: responseData.name || formData.name,
+      subject: formData.subject || '',
+      content: responseData.body || formData.content,
+      type: 'email',
+      status: (responseData.status?.toLowerCase() || 'draft') as CampaignStatus,
+      target_type: responseData.toAll ? 'all_clients' : 
+                 responseData.emails?.length ? 'manual_list' : 'specific_clients',
+      manual_recipients: responseData.emails?.join(','),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      // Set default values for optional fields
+      stat_sent: 0,
+      stat_opened: 0,
+      stat_clicked: 0
+    };
+
+    set(state => ({ campaigns: [transformedCampaign, ...state.campaigns] }));
+    toast.success(`Campaign "${transformedCampaign.name}" created successfully.`);
+    return transformedCampaign;
+  } catch (error: any) {
+    const errorMessage = error.message || 'Failed to create campaign';
+    console.error('Campaign creation error:', error);
+    toast.error(errorMessage);
+    set({ error: errorMessage });
+    return null;
+  } finally {
+    set({ loading: false });
+  }
+},
   updateCampaign: async (campaignId, formData) => {
      set({ loading: true });
      try {

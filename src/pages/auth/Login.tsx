@@ -2,11 +2,11 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
-import { useAuth } from '@/lib/auth';
+import { Link, useNavigate } from 'react-router-dom';
 import { Logo } from '@/components/marketing/Logo';
-import { toast } from 'sonner'; // Import toast
-import { Loader2 } from 'lucide-react'; // Import Loader2
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { jwtDecode } from 'jwt-decode';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -16,7 +16,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 function Login() {
-  const { login, loading } = useAuth(); // Use login and loading state
+  const [loading, setLoading] = React.useState(false);
   const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -26,22 +26,67 @@ function Login() {
     }
   });
 
+  const login = async (email: string, password: string) => {
+    setLoading(true);
+    try {
+      // For demo account, bypass the API call
+      if (email === 'admin@kapperking.com' && password === 'admin123') {
+        return { error: null };
+      }
+
+      const response = await fetch('https://kapperking.runasp.net/api/Users/Login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { error: new Error(errorData.message || 'Login failed') };
+      }
+
+      // const data = await response.json();
+      // Store the token if the API returns one
+      if (response.status === 200) {
+        const token = await response.text(); // Or use response.json() if the token is in JSON format
+        localStorage.setItem('authToken', token);
+        const decoded = jwtDecode<any>(token);
+        console.log('Decoded token:', decoded);
+          if (decoded?.Role === 'SalonOwner') {
+            navigate('/platform');
+          } else {
+            toast.error('Access denied: Not a SalonOwner');
+            return { error: new Error('Unauthorized role') };
+          }
+      }
+      
+      return { error: null };
+    } catch (error) {
+      return { error: error instanceof Error ? error : new Error('Network error') };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     const { error } = await login(data.email, data.password);
     if (error) {
-       console.error('Login error:', error);
-       toast.error(`Login failed: ${error.message}`);
+      console.error('Login error:', error);
+      toast.error(`Login failed: ${error.message}`);
     } else {
-       // Login successful (or demo login successful)
-       // AuthProvider handles setting user state via listener or manually for demo
-       toast.success('Login successful!');
-       // Redirect to the appropriate dashboard (assuming this login is for salon/platform)
-       navigate('/platform'); // Or '/platform' depending on user role check (add later)
+      toast.success('Login successful!');
+      navigate('/platform');
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      {/* Rest of your JSX remains exactly the same */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <Logo size="lg" />
@@ -99,7 +144,7 @@ function Login() {
             <div>
               <button
                 type="submit"
-                disabled={loading || isSubmitting} // Use loading state from useAuth
+                disabled={loading || isSubmitting}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
               >
                 {(loading || isSubmitting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

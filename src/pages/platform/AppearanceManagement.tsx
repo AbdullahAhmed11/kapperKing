@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner'; 
 import { supabase } from '@/lib/supabase';
+import axios from 'axios';
 
 interface ColorPalette {
   id: number;
@@ -38,6 +39,7 @@ interface BrandingData {
   marketingHeader?: MarketingPageHeader;
   marketingHeaderBgImageUrl?: string; 
 }
+
 type UploadableThemeProperty = 'logoUrl' | 'faviconUrl' | 'dashboardLogoUrl' | 'marketingHeaderBgImageUrl';
 
 const ColorInputGroup: React.FC<{
@@ -131,7 +133,8 @@ export default function AppearanceManagement() {
   const [marketingHeader, setMarketingHeader] = useState<MarketingPageHeader | null>(null);
   const [isUploading, setIsUploading] = useState<UploadableThemeProperty | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [brandingUploading, setBrandingUploading] = useState(false);
+  
   // Refs for hidden file inputs
   const logoInputRef = useRef<HTMLInputElement>(null);
   const faviconInputRef = useRef<HTMLInputElement>(null);
@@ -235,6 +238,60 @@ export default function AppearanceManagement() {
     ref.current?.click();
   };
 
+  const handleSaveBranding = async () => {
+    if (!branding) return;
+    
+    try {
+      setBrandingUploading(true);
+      
+      const formData = new FormData();
+      
+      // Append files if they exist in the refs
+      if (logoInputRef.current?.files?.[0]) {
+        formData.append('logo', logoInputRef.current.files[0]);
+      }
+      if (faviconInputRef.current?.files?.[0]) {
+        formData.append('favIcon', faviconInputRef.current.files[0]);
+      }
+      if (dashboardLogoInputRef.current?.files?.[0]) {
+        formData.append('sideBarLogo', dashboardLogoInputRef.current.files[0]);
+      }
+      
+      // Append other branding data
+      formData.append('headingFont', branding.headingFont);
+      formData.append('bodyFont', branding.bodyFont);
+      
+      const response = await fetch('https://kapperking.runasp.net/api/SuperAdmin/AddOrEditBranding', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save branding');
+      }
+      
+      const result = await response.json();
+      toast.success("Branding saved successfully!");
+      
+      // Update local state with new URLs if returned
+      if (result.logoUrl) {
+        setBranding(prev => prev ? {...prev, logo: result.logoUrl} : null);
+      }
+      if (result.favIconUrl) {
+        setBranding(prev => prev ? {...prev, favIcon: result.favIconUrl} : null);
+      }
+      if (result.sideBarLogoUrl) {
+        setBranding(prev => prev ? {...prev, sideBarLogo: result.sideBarLogoUrl} : null);
+      }
+      
+    } catch (error) {
+      console.error('Error saving branding:', error);
+      toast.error('Failed to save branding');
+    } finally {
+      setBrandingUploading(false);
+    }
+  };
+
   const handleSaveChanges = async () => {
     try {
       const [brandingResponse, paletteResponse, headerResponse] = await Promise.all([
@@ -288,8 +345,8 @@ export default function AppearanceManagement() {
           <h1 className="text-2xl font-semibold text-gray-900">Appearance</h1>
           <p className="mt-1 text-sm text-gray-500">Customize your platform's look and feel</p>
         </div>
-        <Button onClick={handleSaveChanges} disabled={!!isUploading}>
-          {isUploading ? 'Uploading...' : 'Save Changes'}
+        <Button onClick={handleSaveChanges} disabled={!!isUploading || brandingUploading}>
+          {isUploading ? 'Uploading...' : 'Save All Changes'}
         </Button>
       </div>
 
@@ -304,10 +361,43 @@ export default function AppearanceManagement() {
               <Image className="h-6 w-6 text-gray-500" />
               <h2 className="ml-3 text-xl font-semibold text-gray-900">Branding</h2>
             </div>
-            {/* Hidden File Inputs */}
-            <input type="file" ref={logoInputRef} onChange={(e) => handleFileUpload(e, 'logoUrl')} hidden accept="image/png, image/jpeg, image/svg+xml, image/webp" />
-            <input type="file" ref={faviconInputRef} onChange={(e) => handleFileUpload(e, 'faviconUrl')} hidden accept="image/x-icon, image/png, image/svg+xml" />
-            <input type="file" ref={dashboardLogoInputRef} onChange={(e) => handleFileUpload(e, 'dashboardLogoUrl')} hidden accept="image/png, image/jpeg, image/svg+xml, image/webp" />
+            
+            <input 
+              type="file" 
+              ref={logoInputRef} 
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setBranding(prev => prev ? {...prev, logo: URL.createObjectURL(file)} : null);
+                }
+              }} 
+              hidden 
+              accept="image/png, image/jpeg, image/svg+xml, image/webp" 
+            />
+            <input 
+              type="file" 
+              ref={faviconInputRef} 
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setBranding(prev => prev ? {...prev, favIcon: URL.createObjectURL(file)} : null);
+                }
+              }} 
+              hidden 
+              accept="image/x-icon, image/png, image/svg+xml" 
+            />
+            <input 
+              type="file" 
+              ref={dashboardLogoInputRef} 
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setBranding(prev => prev ? {...prev, sideBarLogo: URL.createObjectURL(file)} : null);
+                }
+              }} 
+              hidden 
+              accept="image/png, image/jpeg, image/svg+xml, image/webp" 
+            />
             
             <UrlUploadGroup
               label="Marketing Logo"
@@ -315,36 +405,85 @@ export default function AppearanceManagement() {
               value={branding.logo}
               onChange={handleBrandingChange}
               onUploadClick={() => triggerFileInput(logoInputRef)}
-              isUploading={!!isUploading}
+              isUploading={isUploading === 'logoUrl'}
               uploadingProperty={isUploading}
-              previewSrc="/logos/marketing-logo.png"
+              previewSrc={branding.logo || "/logos/marketing-logo.png"}
               alt="Marketing Logo Preview"
               previewClassName="h-10 w-auto"
             />
+            
             <UrlUploadGroup
               label="Favicon"
               id="faviconUrl"
               value={branding.favIcon}
               onChange={handleBrandingChange}
               onUploadClick={() => triggerFileInput(faviconInputRef)}
-              isUploading={!!isUploading}
+              isUploading={isUploading === 'faviconUrl'}
               uploadingProperty={isUploading}
-              previewSrc="/favicon.ico"
+              previewSrc={branding.favIcon || "/favicon.ico"}
               alt="Favicon Preview"
               previewClassName="h-6 w-6"
             />
+            
             <UrlUploadGroup
               label="Dashboard Sidebar Logo"
               id="dashboardLogoUrl"
               value={branding.sideBarLogo}
               onChange={handleBrandingChange}
               onUploadClick={() => triggerFileInput(dashboardLogoInputRef)}
-              isUploading={!!isUploading}
+              isUploading={isUploading === 'dashboardLogoUrl'}
               uploadingProperty={isUploading}
-              previewSrc="/logos/dashboard-logo.png"
+              previewSrc={branding.sideBarLogo || "/logos/dashboard-logo.png"}
               alt="Dashboard Logo Preview"
-              previewClassName="h-8 w-auto bg-gray-500" 
+              previewClassName="h-8 w-auto bg-gray-500"
             />
+
+            {/* Typography Section */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
+              <div>
+                <Label htmlFor="headingFont">Heading Font</Label>
+                <select
+                  id="headingFont"
+                  value={branding.headingFont?.split(',')[0] || 'Inter'}
+                  onChange={(e) => handleBrandingChange('headingFont', `${e.target.value}, sans-serif`)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10"
+                  disabled={!!isUploading}
+                >
+                  <option value="Inter">Inter</option>
+                  <option value="Roboto">Roboto</option>
+                  <option value="Open Sans">Open Sans</option>
+                  <option value="Lato">Lato</option>
+                  <option value="Poppins">Poppins</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="bodyFont">Body Font</Label>
+                <select
+                  id="bodyFont"
+                  value={branding.bodyFont?.split(',')[0] || 'Inter'}
+                  onChange={(e) => handleBrandingChange('bodyFont', `${e.target.value}, sans-serif`)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10"
+                  disabled={!!isUploading}
+                >
+                  <option value="Inter">Inter</option>
+                  <option value="Roboto">Roboto</option>
+                  <option value="Open Sans">Open Sans</option>
+                  <option value="Lato">Lato</option>
+                  <option value="Poppins">Poppins</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Branding Submit Button */}
+            <div className="pt-4">
+              <Button 
+                onClick={handleSaveBranding}
+                disabled={!!isUploading || brandingUploading}
+                className="w-full"
+              >
+                {brandingUploading ? 'Saving Branding...' : 'Save Branding Settings'}
+              </Button>
+            </div>
           </div>
 
           {/* Marketing Header Section */}
@@ -435,56 +574,49 @@ export default function AppearanceManagement() {
                 label="Primary Color" 
                 id="primaryColor" 
                 value={colorPalette.primaryColor} 
-                                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-
+                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
                 disabled={!!isUploading} 
               />
               <ColorInputGroup 
                 label="Secondary Color" 
                 id="secondaryColor" 
                 value={colorPalette.secondaryColor} 
-                                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-
+                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
                 disabled={!!isUploading} 
               />
               <ColorInputGroup 
                 label="Accent Color" 
                 id="accentColor" 
                 value={colorPalette.accentColor} 
-                                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-
+                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
                 disabled={!!isUploading} 
               />
               <ColorInputGroup 
                 label="Marketing Button Text" 
                 id="marketingButtonText" 
                 value={colorPalette.marketingButtonText} 
-                                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-
+                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
                 disabled={!!isUploading} 
               />
               <ColorInputGroup 
                 label="Marketing Body Text" 
                 id="marketingBodyText" 
                 value={colorPalette.marketingBodyText} 
-                                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-
+                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
                 disabled={!!isUploading} 
               />
               <ColorInputGroup 
                 label="Dashboard Sidebar BG" 
                 id="dashboardSidebarBG" 
                 value={colorPalette.dashboardSidebarBG} 
-                                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-
+                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
                 disabled={!!isUploading} 
               />
               <ColorInputGroup 
                 label="Dashboard Sidebar Text" 
                 id="dashboardSidebarText" 
                 value={colorPalette.dashboardSidebarText} 
-                                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-
+                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
                 disabled={!!isUploading} 
               />
               <ColorInputGroup 
@@ -494,48 +626,6 @@ export default function AppearanceManagement() {
                 onChange={handleColorPaletteChange as (property: string, value: string) => void} 
                 disabled={!!isUploading} 
               />
-            </div>
-          </div>
-
-          {/* Typography Section */}
-          <div className="space-y-6 p-6 bg-white shadow rounded-lg border">
-            <div className="flex items-center mb-4">
-              <Type className="h-6 w-6 text-gray-500" />
-              <h2 className="ml-3 text-xl font-semibold text-gray-900">Typography</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="headingFont">Heading Font</Label>
-                <select
-                  id="headingFont"
-                  value={branding.headingFont?.split(',')[0] || 'Inter'} 
-                  onChange={(e) => handleBrandingChange('headingFont', `${e.target.value}, sans-serif`)} 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10"
-                  disabled={!!isUploading}
-                >
-                  <option value="Inter">Inter</option>
-                  <option value="Roboto">Roboto</option>
-                  <option value="Open Sans">Open Sans</option>
-                  <option value="Lato">Lato</option>
-                  <option value="Poppins">Poppins</option>
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="bodyFont">Body Font</Label>
-                <select
-                  id="bodyFont"
-                  value={branding.bodyFont?.split(',')[0] || 'Inter'} 
-                  onChange={(e) => handleBrandingChange('bodyFont', `${e.target.value}, sans-serif`)} 
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm h-10"
-                  disabled={!!isUploading}
-                >
-                  <option value="Inter">Inter</option>
-                  <option value="Roboto">Roboto</option>
-                  <option value="Open Sans">Open Sans</option>
-                  <option value="Lato">Lato</option>
-                  <option value="Poppins">Poppins</option>
-                </select>
-              </div>
             </div>
           </div>
         </div>

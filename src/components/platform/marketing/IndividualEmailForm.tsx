@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
-// Schema for the individual email form
 const emailSchema = z.object({
   subject: z.string().min(3, 'Subject is required'),
   body: z.string().min(10, 'Email body cannot be empty'),
@@ -19,18 +18,15 @@ type EmailFormData = z.infer<typeof emailSchema>;
 interface IndividualEmailFormProps {
   open: boolean;
   onClose: () => void;
-  recipientEmail: string | null; // Email of the subscriber to send to
-  // Placeholder for the actual send function
-  onSend: (recipient: string, subject: string, body: string) => Promise<boolean>; 
+  recipientEmail: string | null;
 }
 
-export function IndividualEmailForm({ open, onClose, recipientEmail, onSend }: IndividualEmailFormProps) {
+export function IndividualEmailForm({ open, onClose, recipientEmail }: IndividualEmailFormProps) {
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<EmailFormData>({
     resolver: zodResolver(emailSchema),
     defaultValues: { subject: '', body: '' }
   });
 
-  // Reset form when dialog opens or recipient changes
   useEffect(() => {
     if (open) {
       reset({ subject: '', body: '' });
@@ -42,11 +38,34 @@ export function IndividualEmailForm({ open, onClose, recipientEmail, onSend }: I
       toast.error("No recipient selected.");
       return;
     }
-    const success = await onSend(recipientEmail, data.subject, data.body);
-    if (success) {
-      onClose(); // Close dialog on successful send
-    } 
-    // Feedback (success/error) should be handled by the onSend function
+
+    try {
+      const response = await fetch('https://kapperking.runasp.net/api/SuperAdmin/SendEmail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` // Adjust if you use different auth
+        },
+        body: JSON.stringify({
+          id: 8, // Set to fixed value 8 as requested
+          subject: data.subject,
+          body: data.body,
+          isHtml: true,
+          to: recipientEmail // Ensure this matches your API expectations
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send email');
+      }
+
+      toast.success('Email sent successfully!');
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send email');
+      console.error('Error sending email:', error);
+    }
   };
 
   return (
@@ -55,7 +74,7 @@ export function IndividualEmailForm({ open, onClose, recipientEmail, onSend }: I
         <DialogHeader>
           <DialogTitle>Send Individual Email</DialogTitle>
           <DialogDescription>
-            Compose and send an email to {recipientEmail || '...'}.
+            Compose and send an email to {recipientEmail || '...'}
           </DialogDescription>
         </DialogHeader>
         <form id="individualEmailForm" onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
@@ -65,13 +84,13 @@ export function IndividualEmailForm({ open, onClose, recipientEmail, onSend }: I
             {errors.subject && <p className="mt-1 text-sm text-red-600">{errors.subject.message}</p>}
           </div>
           <div>
-            <Label htmlFor="body">Body (HTML or Markdown)</Label>
+            <Label htmlFor="body">Body (HTML)</Label>
             <textarea
               id="body"
               {...register('body')}
               rows={12}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm font-mono"
-              placeholder="Enter your email body here..."
+              placeholder="Enter your email body here (HTML supported)..."
             />
             {errors.body && <p className="mt-1 text-sm text-red-600">{errors.body.message}</p>}
           </div>
