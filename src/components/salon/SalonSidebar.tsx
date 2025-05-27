@@ -24,6 +24,8 @@ const navigation = [
   { name: 'Dashboard', href: '/salon', icon: LayoutDashboard },
   { name: 'Appointments', href: '/salon/appointments', icon: Calendar },
   { name: 'Clients', href: '/salon/clients', icon: Users },
+  
+  { name: 'Categories', href: '/salon/categories', icon: Users },
   { name: 'Services', href: '/salon/services', icon: Scissors },
   { name: 'Products', href: '/salon/products', icon: Package },
   { name: 'Staff', href: '/salon/staff', icon: UserCircle },

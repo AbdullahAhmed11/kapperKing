@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input';
 import { ClientForm, ClientFormData } from '@/components/clients/ClientForm'; // Import ClientFormData type
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { AddClientDialog } from '@/components/clients/AddClientDialog'; // Import AddClientDialog component
 import { useClientStore, Client, AddSalonClientFormData } from '@/lib/store/clients'; // Import store and types
 import { useCurrentSalonStore } from '@/lib/store/currentSalon'; // Import current salon store
 import { formatCurrency } from '@/lib/utils'; // Assuming utils exists
-
 // Removed local ClientFormData definition
 
 function Clients() {
@@ -21,13 +21,14 @@ function Clients() {
   const [showNewClient, setShowNewClient] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showEditClient, setShowEditClient] = useState(false);
-
+                                                                                  
   // Fetch clients when salon ID is available
   useEffect(() => {
-    if (currentSalon?.id && !salonLoading && !salonError) {
-      fetchClients(currentSalon.id);
-    }
-  }, [currentSalon?.id, salonLoading, salonError, fetchClients]);
+    fetchClients()
+    // if (currentSalon?.id && !salonLoading && !salonError) {
+    //   fetchClients(currentSalon.id);
+    // }
+  }, [fetchClients]);
 
   const handleEditClick = (client: Client, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -99,9 +100,9 @@ function Clients() {
   if (salonError) {
      return <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700">Error loading salon context: {salonError}</div>;
   }
-  if (!currentSalon) {
-     return <div className="p-6 text-center text-gray-500">No active salon associated with this account.</div>;
-  }
+  // if (!currentSalon) {
+  //    return <div className="p-6 text-center text-gray-500">No active salon associated with this account.</div>;
+  // }
 
   return (
     <div className="space-y-6">
@@ -110,11 +111,7 @@ function Clients() {
           <h1 className="text-2xl font-semibold text-gray-900">Clients</h1>
           <p className="mt-1 text-sm text-gray-500">Manage your client database</p>
         </div>
-        <Button onClick={() => { setSelectedClient(null); setShowNewClient(true); }}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Client
-        </Button>
-      </div>
+    <AddClientDialog onClientAdded={fetchClients} />      </div>
 
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="p-6">

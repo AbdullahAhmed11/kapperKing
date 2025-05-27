@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,17 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useProductStore, Product } from '@/lib/store/products';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
-// Schema for product form validation
 const productSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   description: z.string().optional(),
   price: z.number().min(0, 'Price must be non-negative'),
-  image_url: z.string().url().or(z.literal('')).optional(), // Optional URL
-  stock: z.number().int().optional().nullable(), // Optional integer or null
+  quantity: z.number().int().optional().nullable(),
   active: z.boolean(),
 });
 
@@ -25,13 +22,14 @@ type ProductFormData = z.infer<typeof productSchema>;
 
 interface ProductFormProps {
   salonId: string;
-  productData?: Product | null; // Existing product data for editing
+  productData?: any | null;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
 export function ProductForm({ salonId, productData, onSuccess, onCancel }: ProductFormProps) {
-  const { createProduct, updateProduct, loading } = useProductStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = React.useState(false);
   const isEditing = !!productData;
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<ProductFormData>({
@@ -40,56 +38,76 @@ export function ProductForm({ salonId, productData, onSuccess, onCancel }: Produ
       name: productData?.name || '',
       description: productData?.description || '',
       price: productData?.price || 0,
-      image_url: productData?.image_url || '',
-      stock: productData?.stock ?? null, // Handle null for optional number
-      active: productData?.active ?? true, // Default to active for new products
+      quantity: productData?.stock ?? null,
+      active: productData?.active ?? true,
     }
   });
 
-  // Reset form if productData changes (e.g., opening dialog for different product)
   useEffect(() => {
     reset({
       name: productData?.name || '',
       description: productData?.description || '',
       price: productData?.price || 0,
-      image_url: productData?.image_url || '',
-      stock: productData?.stock ?? null,
+      quantity: productData?.stock ?? null,
       active: productData?.active ?? true,
     });
   }, [productData, reset]);
 
   const onSubmit = async (data: ProductFormData) => {
-    let success = false;
-    const payload = {
-      ...data,
-      salon_id: salonId, // Add salon_id
-    };
+    setIsLoading(true);
+    
+    try {
+      const formData = new FormData();
+      
+      // Common fields for both create and update
+      formData.append('Name', data.name);
+      formData.append('Description', data.description || '');
+      formData.append('Price', data.price.toString());
+      formData.append('Quantity', data.quantity?.toString() || '0');
+      formData.append('IsAvailable', data.active.toString());
+      formData.append('SalonId',  '1');
+      
+      // Append image file if selected
+      if (fileInputRef.current?.files?.[0]) {
+        formData.append('Image', fileInputRef.current.files[0]);
+      }
 
-    if (isEditing && productData) {
-      // Ensure stock is number or undefined, not null, for updateProduct
-      const updatePayload = {
-        ...payload,
-        stock: payload.stock === null ? undefined : payload.stock,
-      };
-      console.log("Updating product:", productData.id, updatePayload);
-      success = await updateProduct(productData.id, updatePayload);
-    } else {
-      console.log("Creating product:", payload);
-      // Omit fields not needed for creation if necessary by backend/DB schema
-      const createPayload = { ...payload, active: data.active ?? true }; 
-      success = await createProduct(createPayload as any); // Cast needed if type mismatch
-    }
+      // For editing, add product ID and use EditProduct endpoint
+      if (isEditing && productData?.id) {
+        formData.append('Id', productData.id.toString());
+      }
 
-    if (success) {
-      onSuccess?.(); // Close dialog on success
+      const endpoint = isEditing && productData?.id 
+        ? 'https://kapperking.runasp.net/api/Products/EditProduct'
+        : 'https://kapperking.runasp.net/api/Products/AddProduct';
+
+      const method = isEditing ? 'POST' : 'POST'; // Assuming both use POST
+
+      const response = await fetch(endpoint, {
+        method,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'create'} product`);
+      }
+
+      toast.success(`Product ${isEditing ? 'updated' : 'created'} successfully`);
+      onSuccess?.();
+    } catch (error: any) {
+      console.error('Error submitting product:', error);
+      toast.error(error.message || `Failed to ${isEditing ? 'update' : 'create'} product`);
+    } finally {
+      setIsLoading(false);
     }
-    // Error toasts handled in store actions
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Form fields remain the same as previous implementation */}
       <div>
-        <Label htmlFor="name">Product Name</Label>
+        <Label htmlFor="name">Product Name *</Label>
         <Input id="name" {...register('name')} className="mt-1" />
         {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
       </div>
@@ -102,36 +120,64 @@ export function ProductForm({ salonId, productData, onSuccess, onCancel }: Produ
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="price">Price (€)</Label>
-          <Input id="price" type="number" step="0.01" {...register('price', { valueAsNumber: true })} className="mt-1" />
+          <Label htmlFor="price">Price *</Label>
+          <Input 
+            id="price" 
+            type="number" 
+            step="0.01" 
+            {...register('price', { valueAsNumber: true })} 
+            className="mt-1" 
+          />
           {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
         </div>
-         <div>
-           <Label htmlFor="stock">Stock Quantity (Optional)</Label>
-           <Input id="stock" type="number" {...register('stock', { setValueAs: (v) => v === '' ? null : parseInt(v, 10) })} className="mt-1" placeholder="Leave blank if not tracked"/>
-           {errors.stock && <p className="mt-1 text-sm text-red-600">{errors.stock.message}</p>}
-         </div>
+        <div>
+          <Label htmlFor="quantity">Stock Quantity</Label>
+          <Input 
+            id="quantity" 
+            type="number" 
+            {...register('quantity', { 
+              setValueAs: (v) => v === '' ? null : parseInt(v, 10) 
+            })} 
+            className="mt-1" 
+            placeholder="Leave blank if not tracked"
+          />
+          {errors.quantity && <p className="mt-1 text-sm text-red-600">{errors.quantity.message}</p>}
+        </div>
       </div>
 
       <div>
-        <Label htmlFor="image_url">Image URL (Optional)</Label>
-        <Input id="image_url" type="url" {...register('image_url')} className="mt-1" placeholder="https://..." />
-        {errors.image_url && <p className="mt-1 text-sm text-red-600">{errors.image_url.message}</p>}
+        <Label htmlFor="image">Product Image</Label>
+        <Input
+          id="image"
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          className="mt-1"
+        />
+        {isEditing && productData?.imagePath && (
+          <p className="mt-1 text-sm text-gray-500">
+            Current image: {productData.imagePath}
+          </p>
+        )}
       </div>
 
       <div className="flex items-center space-x-2">
-        <Checkbox id="active" {...register('active')} defaultChecked={productData?.active ?? true} />
+        <Checkbox 
+          id="active" 
+          {...register('active')} 
+          defaultChecked={productData?.active ?? true} 
+        />
         <Label htmlFor="active" className="text-sm font-normal">
           Product is active (available for sale)
         </Label>
       </div>
 
       <div className="flex justify-end space-x-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
           Cancel
         </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           {isEditing ? 'Save Changes' : 'Create Product'}
         </Button>
       </div>

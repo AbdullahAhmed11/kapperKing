@@ -336,7 +336,28 @@ export default function AppearanceManagement() {
   if (!branding || !colorPalette || !marketingHeader) {
     return <div className="flex justify-center items-center h-64">Failed to load settings</div>;
   }
+const handleSaveColorPalette = async () => {
+  if (!colorPalette) return;
 
+  try {
+    const response = await fetch('https://kapperking.runasp.net/api/SuperAdmin/EditColorPlatte', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(colorPalette),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to save color palette');
+    }
+
+    toast.success("Color palette saved successfully!");
+  } catch (error) {
+    console.error('Error saving color palette:', error);
+    toast.error('Failed to save color palette');
+  }
+};
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -564,70 +585,84 @@ export default function AppearanceManagement() {
         {/* Right Column */}
         <div className="space-y-6">
           {/* Color Palette Section */}
-          <div className="space-y-6 p-6 bg-white shadow rounded-lg border">
-            <div className="flex items-center mb-4">
-              <Palette className="h-6 w-6 text-gray-500" />
-              <h2 className="ml-3 text-xl font-semibold text-gray-900">Color Palette</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <ColorInputGroup 
-                label="Primary Color" 
-                id="primaryColor" 
-                value={colorPalette.primaryColor} 
-                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-                disabled={!!isUploading} 
-              />
-              <ColorInputGroup 
-                label="Secondary Color" 
-                id="secondaryColor" 
-                value={colorPalette.secondaryColor} 
-                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-                disabled={!!isUploading} 
-              />
-              <ColorInputGroup 
-                label="Accent Color" 
-                id="accentColor" 
-                value={colorPalette.accentColor} 
-                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-                disabled={!!isUploading} 
-              />
-              <ColorInputGroup 
-                label="Marketing Button Text" 
-                id="marketingButtonText" 
-                value={colorPalette.marketingButtonText} 
-                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-                disabled={!!isUploading} 
-              />
-              <ColorInputGroup 
-                label="Marketing Body Text" 
-                id="marketingBodyText" 
-                value={colorPalette.marketingBodyText} 
-                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-                disabled={!!isUploading} 
-              />
-              <ColorInputGroup 
-                label="Dashboard Sidebar BG" 
-                id="dashboardSidebarBG" 
-                value={colorPalette.dashboardSidebarBG} 
-                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-                disabled={!!isUploading} 
-              />
-              <ColorInputGroup 
-                label="Dashboard Sidebar Text" 
-                id="dashboardSidebarText" 
-                value={colorPalette.dashboardSidebarText} 
-                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-                disabled={!!isUploading} 
-              />
-              <ColorInputGroup 
-                label="Dashboard Button Text" 
-                id="dashboardButtonText" 
-                value={colorPalette.dashboardButtonText} 
-                onChange={handleColorPaletteChange as (property: string, value: string) => void} 
-                disabled={!!isUploading} 
-              />
-            </div>
-          </div>
+
+{/* Color Palette Section */}
+<div className="space-y-6 p-6 bg-white shadow rounded-lg border">
+  <div className="flex items-center justify-between mb-4">
+    <div className="flex items-center">
+      <Palette className="h-6 w-6 text-gray-500" />
+      <h2 className="ml-3 text-xl font-semibold text-gray-900">Color Palette</h2>
+    </div>
+    <Button 
+      onClick={handleSaveColorPalette}
+      disabled={!!isUploading}
+      size="sm"
+    >
+      Save Colors
+    </Button>
+  </div>
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+    <ColorInputGroup 
+      label="Primary Color" 
+      id="primaryColor" 
+      value={colorPalette.primaryColor} 
+      onChange={handleColorPaletteChange as (property: string, value: string) => void} 
+      disabled={!!isUploading} 
+    />
+    <ColorInputGroup 
+      label="Secondary Color" 
+      id="secondaryColor" 
+      value={colorPalette.secondaryColor} 
+      onChange={handleColorPaletteChange as (property: string, value: string) => void} 
+      disabled={!!isUploading} 
+    />
+    <ColorInputGroup 
+      label="Accent Color" 
+      id="accentColor" 
+      value={colorPalette.accentColor} 
+      onChange={handleColorPaletteChange as (property: string, value: string) => void} 
+      disabled={!!isUploading} 
+    />
+    <ColorInputGroup 
+      label="Marketing Button Text" 
+      id="marketingButtonText" 
+      value={colorPalette.marketingButtonText} 
+      onChange={handleColorPaletteChange as (property: string, value: string) => void} 
+      disabled={!!isUploading} 
+    />
+    <ColorInputGroup 
+      label="Marketing Body Text" 
+      id="marketingBodyText" 
+      value={colorPalette.marketingBodyText} 
+      onChange={handleColorPaletteChange as (property: string, value: string) => void} 
+      disabled={!!isUploading} 
+    />
+    <ColorInputGroup 
+      label="Dashboard Sidebar BG" 
+      id="dashboardSidebarBG" 
+      value={colorPalette.dashboardSidebarBG} 
+      onChange={handleColorPaletteChange as (property: string, value: string) => void} 
+      disabled={!!isUploading} 
+    />
+    <ColorInputGroup 
+      label="Dashboard Sidebar Text" 
+      id="dashboardSidebarText" 
+      value={colorPalette.dashboardSidebarText} 
+      onChange={handleColorPaletteChange as (property: string, value: string) => void} 
+      disabled={!!isUploading} 
+    />
+    <ColorInputGroup 
+      label="Dashboard Button Text" 
+      id="dashboardButtonText" 
+      value={colorPalette.dashboardButtonText} 
+      onChange={handleColorPaletteChange as (property: string, value: string) => void} 
+      disabled={!!isUploading} 
+    />
+  </div>
+</div>
+
+
+         
         </div>
       </div>
     </div>
