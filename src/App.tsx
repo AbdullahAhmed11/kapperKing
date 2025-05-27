@@ -69,10 +69,12 @@ import SalonBooking from './pages/salon/[slug]/book';
 // import Appointmentss from './pages/Appointments';
 // No loader needed for BrowserRouter setup
 // const marketingPageLoader = ... (Remove loader)
-
+import Categories from './pages/salon/Categories'; // Assuming categories is similar to clients
 function App() {
   return (
+
     // Use original BrowserRouter structure
+    
     <Router> 
       <ThemeProvider>
         <AuthProvider>
@@ -103,7 +105,7 @@ function App() {
 
             {/* Platform Admin Routes - Temporarily removing ProtectedRoute for direct access */}
             <Route
-              path="/platform"
+              path="/mustada"
               element={
                 // <ProtectedRoute> // Removed protection
                   <PlatformLayout />
@@ -122,6 +124,7 @@ function App() {
             </Route>
 
             {/* Salon Dashboard Routes */}
+            
             <Route
               path="/salon"
               element={
@@ -133,9 +136,11 @@ function App() {
               <Route index element={<SalonDashboard />} />
               <Route path="appointments" element={<Appointments />} />
               <Route path="clients" element={<Clients />} />
+              <Route path="categories" element={<Categories />} /> {/* Assuming categories is similar to clients */}
               <Route path="services" element={<Services />} />
               <Route path="staff" element={<Staff />} />
               <Route path="marketing" element={<Marketing />} />
+              
               <Route path="website" element={<Website />} />
               <Route path="reports" element={<Reports />} />
               <Route path="loyalty" element={<LoyaltyPage />} />

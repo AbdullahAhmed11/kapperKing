@@ -2,15 +2,27 @@ import React from 'react';
 import { format } from 'date-fns';
 import { Clock, Calendar, User, Scissors } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils'; // Import currency formatter
-import { Appointment } from '@/lib/store/appointments'; // Import shared type
+// import { Appointment } from '@/lib/store/appointments'; // Import shared type
 
 // Removed local Appointment interface definition
 
-interface AppointmentListProps {
-  appointments: Appointment[];
-  onAppointmentClick?: (appointment: Appointment) => void;
+// interface AppointmentListProps {
+//   appointments: Appointment[];
+//   onAppointmentClick?: (appointment: Appointment) => void;
+// }
+interface Appointment {
+  id: number;
+  stylistName: string;
+  customerName: string;
+  startAt: string;
+  duration: number;
+  services: string[];
 }
 
+interface AppointmentListProps {
+  appointments: Appointment[];
+  onAppointmentClick: (appointment: Appointment) => void;
+}
 export function AppointmentList({ appointments, onAppointmentClick }: AppointmentListProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -46,38 +58,38 @@ export function AppointmentList({ appointments, onAppointmentClick }: Appointmen
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-medium text-gray-900">
                     {/* Use start_time */}
-                    {format(new Date(appointment.start_time), 'h:mm a')}
+                    {/* {format(new Date(appointment.start_time), 'h:mm a')} */}
                   </span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(appointment.status)}`}>
-                    {appointment.status}
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(appointment.startAt)}`}>
+                    {appointment.startAt}
                   </span>
                 </div>
                 <h4 className="text-sm font-medium text-gray-900 mt-1">
                   {/* Use client.firstName, client.lastName */}
-                  {appointment.client.firstName} {appointment.client.lastName}
+                  {appointment.customerName} {appointment.customerName}
                 </h4>
                 <div className="mt-2 flex items-start space-x-4 text-sm text-gray-500">
                   <div className="flex items-center">
                     <Scissors className="h-4 w-4 mr-1" />
                     {/* Use service.name */}
-                    {appointment.service.name}
+                    {appointment.services.join(', ')}
                   </div>
                   <div className="flex items-center">
                     <Clock className="h-4 w-4 mr-1" />
                     {/* Use service.duration */}
-                    {appointment.service.duration} min
+                    {appointment.duration} min
                   </div>
                   <div className="flex items-center">
                     <User className="h-4 w-4 mr-1" />
                     {/* Use staff.firstName */}
-                    {appointment.staff.firstName}
+                    {appointment.stylistName}
                   </div>
                 </div>
               </div>
             </div>
             <div className="text-right">
               {/* Use service.price */}
-              <span className="text-sm font-medium text-gray-900">{formatCurrency(appointment.service.price)}</span>
+              {/* <span className="text-sm font-medium text-gray-900">{formatCurrency(appointment.services)}</span> */}
             </div>
           </div>
         </div>

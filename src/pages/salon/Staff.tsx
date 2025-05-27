@@ -18,20 +18,22 @@ function Staff() {
   const { staff, loading, error, fetchStaff, createStaff, updateStaff, deleteStaff } = useStaffStore();
   const { services: allServices, fetchServices } = useServiceStore(); // Fetch services for mapping
   // Removed duplicate declarations below
-
+ const salonId = "1";
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewStaff, setShowNewStaff] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [showEditStaff, setShowEditStaff] = useState(false);
   const [showAvailability, setShowAvailability] = useState(false);
-
-  // Fetch staff and services when salon ID is available
   useEffect(() => {
-    if (currentSalon?.id && !salonLoading && !salonError) {
-      fetchStaff(currentSalon.id);
-      fetchServices(currentSalon.id); // Fetch services needed for display
-    }
-  }, [currentSalon?.id, salonLoading, salonError, fetchStaff, fetchServices]);
+    fetchStaff(salonId);
+  }, [fetchStaff, salonId]);
+  // Fetch staff and services when salon ID is available
+  // useEffect(() => {
+  //   if (currentSalon?.id && !salonLoading && !salonError) {
+  //     fetchStaff(currentSalon.id);
+  //     fetchServices(currentSalon.id); // Fetch services needed for display
+  //   }
+  // }, [currentSalon?.id, salonLoading, salonError, fetchStaff, fetchServices]);
 
   // Function to get service names from IDs
   const getServiceNames = (serviceIds: string[]): string[] => {
@@ -100,9 +102,9 @@ function Staff() {
   if (salonError) {
      return <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700">Error loading salon context: {salonError}</div>;
   }
-  if (!currentSalon) {
-     return <div className="p-6 text-center text-gray-500">No active salon associated with this account.</div>;
-  }
+  // if (!currentSalon) {
+  //    return <div className="p-6 text-center text-gray-500">No active salon associated with this account.</div>;
+  // }
 
   return (
     <div className="space-y-6">

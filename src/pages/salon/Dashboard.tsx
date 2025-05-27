@@ -28,14 +28,14 @@ export default function SalonDashboard() { // Renamed component
   const { services, fetchServices, loading: servicesLoading, error: serviceError } = useServiceStore();
 
   // Fetch data when salon context or selected date changes
-  useEffect(() => {
-    if (currentSalon?.id && !salonLoading && !salonError) {
-      fetchAppointments(currentSalon.id, date);
-      // Fetch clients and services once on load or if salon changes
-      fetchClients(currentSalon.id); 
-      fetchServices(currentSalon.id);
-    }
-  }, [currentSalon?.id, date, salonLoading, salonError, fetchAppointments, fetchClients, fetchServices]);
+  // useEffect(() => {
+  //   if (currentSalon?.id && !salonLoading && !salonError) {
+  //     fetchAppointments(currentSalon.id, date);
+  //     // Fetch clients and services once on load or if salon changes
+  //     fetchClients(currentSalon.id); 
+  //     fetchServices(currentSalon.id);
+  //   }
+  // }, [currentSalon?.id, date, salonLoading, salonError, fetchAppointments, fetchClients, fetchServices]);
 
   // Calculate Stats dynamically
   const todaysAppointmentsCount = appointments.filter(app => 
@@ -72,12 +72,12 @@ export default function SalonDashboard() { // Renamed component
   if (isLoading && appointments.length === 0 && clients.length === 0) { // Show loading on initial fetch
      return <div className="flex justify-center items-center p-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
-  if (combinedError) {
-     return <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700">Error loading dashboard data: {combinedError}</div>;
-  }
-   if (!isLoading && !currentSalon) {
-     return <div className="p-6 text-center text-gray-500">No active salon associated with this account.</div>;
-  }
+  // if (combinedError) {
+  //    return <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700">Error loading dashboard data: {combinedError}</div>;
+  // }
+  //  if (!isLoading && !currentSalon) {
+  //    return <div className="p-6 text-center text-gray-500">No active salon associated with this account.</div>;
+  // }
 
   return (
     <div className="space-y-6">

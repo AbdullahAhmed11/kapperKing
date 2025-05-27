@@ -38,7 +38,7 @@ export const useClientStore = create<ClientState>((set, get) => ({
   fetchClients: async () => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('https://kapperking.runasp.net/api/Owners/GetOwners');
+      const response = await fetch('https://kapperking.runasp.net/api/Salons/GetCustomers?id=1');
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

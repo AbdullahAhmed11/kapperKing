@@ -54,44 +54,89 @@ export const useStaffStore = create<StaffStore>((set, get) => ({ // Re-added 'ge
   loading: false,
   error: null,
 
-  fetchStaff: async (salonId) => {
-    const demoSalonId = 'demo-salon-id-999'; 
+//   fetchStaff: async (salonId) => {
+//     const demoSalonId = 'demo-salon-id-999'; 
+//     if (!salonId) { set({ staff: [], loading: false, error: 'Salon ID required.' }); return; }
+//     if (salonId === demoSalonId) { set({ staff: [], loading: false, error: null }); return; } // Empty for demo
+
+//     try {
+//       set({ loading: true, error: null });
+//       // Fetch staff including availability/working_hours and join service IDs
+//       const { data, error } = await supabase
+//         .from('staff')
+//         .select(`
+//           id, first_name, last_name, email, phone, role, active, salon_id, 
+//           availability, working_hours, image_url, title, bio, 
+//           staff_services ( service_id ) 
+//         `) 
+//         .eq('salon_id', salonId) // Use correct DB column name
+//         .eq('active', true) // Fetch only active staff by default? Adjust if needed
+//         .order('first_name', { ascending: true }); // Corrected sort column to DB name
+
+//       if (error) throw error;
+
+//       // Transform the data to match StaffMember interface
+//       const transformedData = data?.map(s => ({
+//         id: s.id,
+//         firstName: s.first_name,
+//         lastName: s.last_name,
+//         email: s.email,
+//         phone: s.phone,
+//         role: s.role,
+//         services: s.staff_services?.map((ss: { service_id: string }) => ss.service_id) || [], 
+//         active: s.active,
+//         salonId: s.salon_id, 
+//         availability: s.availability || null, // Handle potential null from DB
+//         working_hours: s.working_hours || null, // Handle potential null from DB
+//         imageUrl: s.image_url,
+//         title: s.title,
+//         bio: s.bio,
+//       })) || [];
+//       set({ staff: transformedData });
+//     } catch (error: any) {
+//       set({ error: error.message });
+//       toast.error('Failed to fetch staff');
+//     } finally {
+//       set({ loading: false });
+//     }
+//   },
+
+
+ fetchStaff: async (salonId) => {
+    const demoSalonId = 'demo-salon-id-999';
     if (!salonId) { set({ staff: [], loading: false, error: 'Salon ID required.' }); return; }
-    if (salonId === demoSalonId) { set({ staff: [], loading: false, error: null }); return; } // Empty for demo
+    if (salonId === demoSalonId) { set({ staff: [], loading: false, error: null }); return; }
 
     try {
       set({ loading: true, error: null });
-      // Fetch staff including availability/working_hours and join service IDs
-      const { data, error } = await supabase
-        .from('staff')
-        .select(`
-          id, first_name, last_name, email, phone, role, active, salon_id, 
-          availability, working_hours, image_url, title, bio, 
-          staff_services ( service_id ) 
-        `) 
-        .eq('salon_id', salonId) // Use correct DB column name
-        .eq('active', true) // Fetch only active staff by default? Adjust if needed
-        .order('first_name', { ascending: true }); // Corrected sort column to DB name
+      
+      // Fetch from the new API endpoint
+      const response = await fetch(`https://kapperking.runasp.net/api/Salons/GetStylists?id=${salonId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      if (error) throw error;
+      const data = await response.json();
+      
+      // Transform the API response to match your StaffMember interface
+      const transformedData = data.map((s: any) => ({
+        id: s.id.toString(), // Ensure ID is string
+        firstName: s.firstName || s.first_name || '',
+        lastName: s.lastName || s.last_name || '',
+        email: s.email || '',
+        phone: s.phone || '',
+        role: s.role || 'stylist', // Default to 'stylist' if not provided
+        services: s.services || s.serviceIds || [], // Adjust based on API response
+        active: s.active !== false, // Default to true if not specified
+        salonId: s.salonId?.toString() || salonId,
+        availability: s.availability || null,
+        working_hours: s.workingHours || s.working_hours || null,
+        imageUrl: s.imageUrl || s.image_url || '',
+        title: s.title || '',
+        bio: s.bio || '',
+      }));
 
-      // Transform the data to match StaffMember interface
-      const transformedData = data?.map(s => ({
-        id: s.id,
-        firstName: s.first_name,
-        lastName: s.last_name,
-        email: s.email,
-        phone: s.phone,
-        role: s.role,
-        services: s.staff_services?.map((ss: { service_id: string }) => ss.service_id) || [], 
-        active: s.active,
-        salonId: s.salon_id, 
-        availability: s.availability || null, // Handle potential null from DB
-        working_hours: s.working_hours || null, // Handle potential null from DB
-        imageUrl: s.image_url,
-        title: s.title,
-        bio: s.bio,
-      })) || [];
       set({ staff: transformedData });
     } catch (error: any) {
       set({ error: error.message });
@@ -100,7 +145,7 @@ export const useStaffStore = create<StaffStore>((set, get) => ({ // Re-added 'ge
       set({ loading: false });
     }
   },
-
+  
   createStaff: async (staffData) => {
      set({ loading: true });
      try {
