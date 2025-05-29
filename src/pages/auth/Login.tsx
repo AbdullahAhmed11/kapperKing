@@ -183,11 +183,11 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Logo } from '@/components/marketing/Logo';
-import { toast } from 'sonner'; // Import toast
-import { Loader2 } from 'lucide-react'; // Import Loader2
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -197,9 +197,14 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 function Login() {
-  const { login, loading } = useAuth(); // Use login and loading state
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>({
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting }
+  } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: 'admin@kapperking.com',
@@ -208,16 +213,24 @@ function Login() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    const { error } = await login(data.email, data.password);
+    const { error,  } = await login(data.email, data.password);
+    
     if (error) {
-       console.error('Login error:', error);
-       toast.error(`Login failed: ${error.message}`);
+      console.error('Login error:', error);
+      toast.error(`Login failed: ${error.message}`);
+      return;
+    }
+
+    toast.success('Login successful!');
+    
+    // Redirect based on user type
+    if (data.email === 'superAdmin@gmail.com') {
+      navigate('/platform');
+    } else if (data.email === 'admin@kapperking.com') {
+      navigate('/salon');
     } else {
-       // Login successful (or demo login successful)
-       // AuthProvider handles setting user state via listener or manually for demo
-       toast.success('Login successful!');
-       // Redirect to the appropriate dashboard (assuming this login is for salon/platform)
-       navigate('/salon'); // Or '/platform' depending on user role check (add later)
+      // Default redirect for regular users
+      navigate('/dashboard');
     }
   };
 
@@ -280,7 +293,7 @@ function Login() {
             <div>
               <button
                 type="submit"
-                disabled={loading || isSubmitting} // Use loading state from useAuth
+                disabled={loading || isSubmitting}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
               >
                 {(loading || isSubmitting) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -295,16 +308,21 @@ function Login() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Demo Account</span>
+                <span className="px-2 bg-white text-gray-500">Demo Accounts</span>
               </div>
             </div>
 
-            <div className="mt-6 text-center text-sm text-gray-600">
-              Email:{' '}
-              <span className="font-medium text-primary-600">admin@kapperking.com</span>
-              <br />
-              Password:{' '}
-              <span className="font-medium text-primary-600">admin123</span>
+            <div className="mt-6 text-center text-sm text-gray-600 space-y-2">
+              <div>
+                <span className="font-semibold">Super Admin:</span><br />
+                Email: <span className="font-medium text-primary-600">superAdmin@gmail.com</span><br />
+                Password: <span className="font-medium text-primary-600">123456789</span>
+              </div>
+              <div>
+                <span className="font-semibold">Regular Admin:</span><br />
+                Email: <span className="font-medium text-primary-600">admin@kapperking.com</span><br />
+                Password: <span className="font-medium text-primary-600">admin123</span>
+              </div>
             </div>
           </div>
         </div>
