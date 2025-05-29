@@ -105,7 +105,7 @@ function App() {
 
             {/* Platform Admin Routes - Temporarily removing ProtectedRoute for direct access */}
             <Route
-              path="/mustada"
+              path="/Platform"
               element={
                 // <ProtectedRoute> // Removed protection
                   <PlatformLayout />
