@@ -33,11 +33,11 @@ export default function SalonSubscription() {
 
 const token = Cookies.get('salonUser');
 
-const decoded = jwtDecode<JwtPayload>(token);
-if (token) {
-  const decoded = jwtDecode<JwtPayload>(token);
-  console.log('User ID:', decoded.Id);
-}
+const decoded = token ?  jwtDecode<JwtPayload>(token) : undefined;
+// if (token) {
+//   const decoded = jwtDecode<JwtPayload>(token);
+//   console.log('User ID:', decoded.Id);
+// }
 
   const [showPlansDialog, setShowPlansDialog] = useState(false);
   const [plans, setPlans] = useState([]);

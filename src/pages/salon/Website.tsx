@@ -491,12 +491,12 @@ const Website = () => {
   
   const token = Cookies.get('salonUser');
   
-  const decoded = jwtDecode<JwtPayload>(token);
+  const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
 
-  if (token) {
-    const decoded = jwtDecode<JwtPayload>(token);
-    console.log('User ID:', decoded.Name);
-  }
+  // if (token) {
+  //   const decoded = jwtDecode<JwtPayload>(token);
+  //   console.log('User ID:', decoded.Name);
+  // }
   // Website state
   const [website, setWebsite] = useState({
     themeConfig: {

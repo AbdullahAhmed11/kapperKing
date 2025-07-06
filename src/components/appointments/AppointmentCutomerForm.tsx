@@ -35,12 +35,13 @@ export function AppointmentCutomerForm({onSuccess}: any) {
   const token = Cookies.get('salonUser');
   const cutomerToken = Cookies.get(`customerToken`)
   
-  const decoded = jwtDecode<JwtPayload>(token);
-  const CutomerDecoded = jwtDecode<CustomerJwt>(cutomerToken);
+  const decoded = token ?  jwtDecode<JwtPayload>(token) : undefined;
+
+  const CutomerDecoded = cutomerToken ? jwtDecode<CustomerJwt>(cutomerToken) : undefined;
   
 
   if (token) {
-    const decoded = jwtDecode<JwtPayload>(token);
+    // const decoded = jwtDecode<JwtPayload>(token);
     console.log('User ID:', decoded.Name);
   }
     interface Service {
