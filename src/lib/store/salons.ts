@@ -56,6 +56,8 @@ export const useSalonStore = create<SalonState>((set, get) => ({
         name: salon.name,
         address: salon.address,
         city: salon.city,
+        ownerName: salon.ownerName,
+        planName: salon.planName,
         postalCode: salon.postalCode,
         phoneNumber: salon.phoneNumber,
         email: salon.email,

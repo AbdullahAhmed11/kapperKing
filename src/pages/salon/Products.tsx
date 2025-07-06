@@ -7,6 +7,8 @@ import { formatCurrency } from '@/lib/utils';
 import { ProductForm } from '@/components/salon/forms/ProductForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {toast} from 'sonner';
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie'; 
 type Product = {
   id: string;
   name: string;
@@ -18,8 +20,21 @@ type Product = {
   salon_id: string;
   created_at: string;
 };
-
+type JwtPayload = {
+  Id: number; // adjust this to match your token's structure
+  email?: string;
+  name?: string;
+  // any other fields you expect
+};
 export default function ProductsPage() {
+  const token = Cookies.get('salonUser');
+  
+  const decoded = jwtDecode<JwtPayload>(token);
+  if (token) {
+    const decoded = jwtDecode<JwtPayload>(token);
+    console.log('User ID:', decoded.Id);
+  }
+
   const { currentSalon, loading: salonLoading, error: salonError } = useCurrentSalonStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -32,7 +47,7 @@ export default function ProductsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('https://kapperking.runasp.net/api/Products/GetProducts/1');
+      const res = await fetch(`https://kapperking.runasp.net/api/Products/GetProducts/${decoded?.Id}`);
       if (!res.ok) throw new Error('Failed to fetch products');
       const data = await res.json();
       setProducts(data);
@@ -46,7 +61,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     fetchProducts();
-  }, [ salonLoading, salonError]);
+  }, [ ]);
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
@@ -197,7 +212,7 @@ const handleDelete = async (productId: string) => {
             <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
           </DialogHeader>
           <ProductForm
-            salonId={currentSalon?.id || ''}
+            salonId={decoded?.Id?.toString() || ''}
             productData={editingProduct}
             onSuccess={() => {
               setShowProductForm(false);

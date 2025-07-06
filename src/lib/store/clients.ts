@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { toast } from 'sonner';
-
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
 // Updated Client/Owner interface to match your API response
 export interface Client {
   id: string;
@@ -11,7 +12,12 @@ export interface Client {
   salonId?: string; // If applicable
   createdAt?: string; // If applicable
 }
-
+type JwtPayload = {
+  Id: number; // adjust this to match your token's structure
+  email?: string;
+  name?: string;
+  // any other fields you expect
+};
 interface ClientState {
   clients: Client[];
   currentCustomerClient: Client | null;
@@ -27,7 +33,13 @@ interface ClientState {
   getClientById: (clientId: string) => Promise<Client | undefined>;
   updateCurrentCustomerClient: (updates: Partial<Client>) => Promise<boolean>;
 }
+const token = Cookies.get('salonUser');
 
+const decoded = jwtDecode<JwtPayload>(token);
+if (token) {
+  const decoded = jwtDecode<JwtPayload>(token);
+  console.log('User ID:', decoded.Id);
+}
 export const useClientStore = create<ClientState>((set, get) => ({
   clients: [],
   currentCustomerClient: null,
@@ -38,7 +50,7 @@ export const useClientStore = create<ClientState>((set, get) => ({
   fetchClients: async () => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('https://kapperking.runasp.net/api/Salons/GetCustomers?id=1');
+      const response = await fetch(`https://kapperking.runasp.net/api/Salons/GetCustomers?id=${decoded?.Id}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

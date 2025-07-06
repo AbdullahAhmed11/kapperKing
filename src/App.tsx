@@ -70,6 +70,7 @@ import SalonBooking from './pages/salon/[slug]/book';
 // No loader needed for BrowserRouter setup
 // const marketingPageLoader = ... (Remove loader)
 import Categories from './pages/salon/Categories'; // Assuming categories is similar to clients
+import Success from './pages/Success';
 function App() {
   return (
 
@@ -94,6 +95,7 @@ function App() {
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/about" element={<About />} /> 
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/success" element={<Success/>}/>
               {/* <Route path="/book-appointment" element={<Appointmentss />} /> */}
               {/* <Route path="/platform/salons" element={<SalonManagement />} /> */}
 
@@ -101,7 +103,8 @@ function App() {
 
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
+            <Route path="/signup/:planId/:priceId" element={<SignUp />} />
+            {/* <Route path="/signup/planId:planId/priceId:priceId" element={<SignUp />} /> */}
 
             {/* Platform Admin Routes - Temporarily removing ProtectedRoute for direct access */}
             <Route
@@ -140,7 +143,6 @@ function App() {
               <Route path="services" element={<Services />} />
               <Route path="staff" element={<Staff />} />
               <Route path="marketing" element={<Marketing />} />
-              
               <Route path="website" element={<Website />} />
               <Route path="reports" element={<Reports />} />
               <Route path="loyalty" element={<LoyaltyPage />} />
@@ -151,6 +153,7 @@ function App() {
             </Route>
 
             {/* Customer Auth Routes */}
+            
             <Route path="/c/login" element={<CustomerLoginPage />} />
             <Route path="/c/rewards" element={<ProtectedRoute><CustomerRewardsPage /></ProtectedRoute>} />
             <Route path="/c/signup" element={<CustomerSignUpPage />} />
@@ -163,8 +166,10 @@ function App() {
             <Route path="/c/settings" element={<ProtectedRoute><CustomerSettingsPage /></ProtectedRoute>} />
 
             {/* Salon Microsite Routes */}
-            <Route path="/s/:slug" element={<SalonMicrosite />} />
+            <Route path="/s/:slug/:id" element={<SalonMicrosite />} />
             <Route path="/s/:slug/book" element={<SalonBooking />} />
+            <Route path="/s/:slug/:id/login" element={<CustomerLoginPage />} />
+            <Route path="/s/:slug/:id/signup" element={<CustomerSignUpPage />} />
           </Routes>
           <Toaster position="top-right" />
         </AuthProvider>

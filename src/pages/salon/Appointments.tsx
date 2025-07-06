@@ -198,6 +198,9 @@ import { AppointmentList } from '@/components/appointments/AppointmentList';
 import { AppointmentDetails } from '@/components/appointments/AppointmentDetails';
 import { AgendaView } from '@/components/appointments/AgendaView';
 import { AppointmentCalendar } from '@/components/appointments/AppointmentCalendar';
+// import AppointmentAddForm from '@/components/appointments/AppointmentAddForm';
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
 
 interface Appointment {
   id: number;
@@ -207,7 +210,12 @@ interface Appointment {
   duration: number;
   services: string[];
 }
-
+type JwtPayload = {
+  Id: number; // adjust this to match your token's structure
+  email?: string;
+  name?: string;
+  // any other fields you expect
+};
 export default function Appointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -220,14 +228,20 @@ export default function Appointments() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>(['All Staff']);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(['All Services']);
+const token = Cookies.get('salonUser');
 
+const decoded = jwtDecode<JwtPayload>(token);
+if (token) {
+  const decoded = jwtDecode<JwtPayload>(token);
+  console.log('User ID:', decoded.Id);
+}
   const fetchAppointments = async (date: Date) => {
     setLoading(true);
     setError(null);
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
       const response = await fetch(
-        `https://kapperking.runasp.net/api/Appointments/GetAppointmentsByShop?id=1&date=${formattedDate}`
+        `https://kapperking.runasp.net/api/Appointments/GetAppointmentsByShop?id=${decoded.Id}&date=${formattedDate}`
       );
       if (!response.ok) {
         throw new Error('Failed to fetch appointments');
@@ -411,13 +425,13 @@ export default function Appointments() {
             <DialogTitle>New Appointment</DialogTitle>
           </DialogHeader>
           <AppointmentForm
-            initialTime={selectedTime}
-            initialDate={date}
+            // initialTime={selectedTime}
+            // initialDate={date}
             onSuccess={() => {
               setShowNewAppointment(false);
               fetchAppointments(date);
             }}
-            onCancel={() => setShowNewAppointment(false)}
+            // onCancel={() => setShowNewAppointment(false)}
           />
         </DialogContent>
       </Dialog>

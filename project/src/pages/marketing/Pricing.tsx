@@ -71,7 +71,7 @@ export default function Pricing() {
       <div className="max-w-7xl mx-auto py-24 px-4 sm:px-6 lg:px-8">
         <div className="sm:flex sm:flex-col sm:align-center">
           <h1 className="text-5xl font-extrabold text-gray-900 sm:text-center">
-            Simple, transparent pricing
+            {/* Simple, transparent pricing */}
           </h1>
           <p className="mt-5 text-xl text-gray-500 sm:text-center">
             Start with a 14-day free trial. No credit card required.

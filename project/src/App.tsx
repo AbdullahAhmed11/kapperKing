@@ -129,6 +129,7 @@ function App() {
             {/* Salon Microsite Routes */}
             <Route path="/s/:slug" element={<SalonMicrosite />} />
             <Route path="/s/:slug/book" element={<SalonBooking />} />
+            
           </Routes>
           <Toaster position="top-right" />
         </AuthProvider>

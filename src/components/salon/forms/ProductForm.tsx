@@ -65,7 +65,7 @@ export function ProductForm({ salonId, productData, onSuccess, onCancel }: Produ
       formData.append('Price', data.price.toString());
       formData.append('Quantity', data.quantity?.toString() || '0');
       formData.append('IsAvailable', data.active.toString());
-      formData.append('SalonId',  '1');
+      formData.append('SalonId',  salonId);
       
       // Append image file if selected
       if (fileInputRef.current?.files?.[0]) {

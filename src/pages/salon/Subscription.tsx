@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,17 +18,71 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"; // Import Table components
-
+import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie'; // Add this import at the top
 // TODO: Fetch actual subscription, usage, billing data from backend
+type JwtPayload = {
+  Id: number; // adjust this to match your token's structure
+  email?: string;
+  name?: string;
+  // any other fields you expect
+};
 
 export default function SalonSubscription() {
+
+const token = Cookies.get('salonUser');
+
+const decoded = jwtDecode<JwtPayload>(token);
+if (token) {
+  const decoded = jwtDecode<JwtPayload>(token);
+  console.log('User ID:', decoded.Id);
+}
+
+  const [showPlansDialog, setShowPlansDialog] = useState(false);
+  const [plans, setPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [changingPlanId, setChangingPlanId] = useState<number | null>(null);
+
   const navigate = useNavigate(); // Initialize useNavigate
   // Placeholder data - replace with actual fetched data
   const [isLoading, setIsLoading] = useState(false);
   const [isManaging, setIsManaging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoRenew, setAutoRenew] = useState(true); // Example state for toggle
+  interface SalonSubscriptionData {
+    name?: string;
+    stylistCount?: number;
+    staffLimit?: number;
+    price?: string;
+    customers?: number;
+    customerLimit?: number;
+    subscriptionId?: number;
+    invoices?: Array<{
+      id: string;
+      subscriptionName: string;
+      price: number;
+      createAt: string;
+      status: string;
+      pdfUrl: string;
+    }>;
+    ownerName?: string;
+    email?: string;
+    // Add other properties as needed based on your API response
+  }
 
+  const [subs, setSubs] = useState<SalonSubscriptionData | null>(null);
+  const getSalonSubs = async () => {
+    try{
+      const res = await axios.get(`https://kapperking.runasp.net/api/Salons/GetSalonSubscription?id=${decoded?.Id}`)
+      setSubs(res.data)
+    }catch (error) {
+      console.log(error)
+    }
+  }
+  useEffect(() => {
+    getSalonSubs()
+  },[])
   // More detailed placeholder data matching the screenshot structure
   const subscription = {
     planName: 'Professional Plan',
@@ -58,6 +112,67 @@ export default function SalonSubscription() {
       { id: 'inv_3', date: '2025-01-01', amount: 49.99, status: 'Paid', pdfUrl: '#' },
     ]
   };
+const handleChangePlan = async () => {
+  setPlansLoading(true);
+  setShowPlansDialog(true);
+
+  try {
+    const res = await axios.get('https://kapperking.runasp.net/api/Home/GetPlans');
+    setPlans(res.data);
+  } catch (error) {
+    toast.error("Failed to fetch plans.");
+    console.error(error);
+  } finally {
+    setPlansLoading(false);
+  }
+};
+const handlePlanSelection = async (newPlanId: number, subscriptionType: "Monthly" | "Annual") => {
+  if (!subs?.subscriptionId) {
+    toast.error("Current subscription ID not found.");
+    return;
+  }
+
+  setChangingPlanId(newPlanId);
+  try {
+    await axios.post('https://kapperking.runasp.net/api/Salons/ChangeSubscription', {
+      oldSubscriptionId: subs.subscriptionId,
+      newPlanId,
+      subscriptionType,
+    });
+
+    toast.success("Subscription changed successfully!");
+    setShowPlansDialog(false);
+    getSalonSubs(); // refresh subscription info
+  } catch (error) {
+    toast.error("Failed to change subscription.");
+    console.error(error);
+  } finally {
+    setChangingPlanId(null);
+  }
+};
+const handleCancelSubscription = async () => {
+  if (!subs?.subscriptionId) {
+    toast.error("Subscription ID not found.");
+    return;
+  }
+
+  const confirmed = window.confirm(
+    'Are you sure you want to cancel your subscription? This action cannot be undone.'
+  );
+
+  if (!confirmed) return;
+
+  try {
+    await axios.post(
+      `https://kapperking.runasp.net/api/Salons/CancelSubscription?subscriptionId=${subs.subscriptionId}`
+    );
+    toast.success("Subscription canceled successfully.");
+    getSalonSubs(); // Refresh data
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to cancel subscription.");
+  }
+};
 
   const handleManageSubscription = async () => {
     setIsManaging(true);
@@ -70,18 +185,18 @@ export default function SalonSubscription() {
     // setIsManaging(false); // Only if redirect fails
   };
 
-  const handleCancelSubscription = () => {
-    // TODO: Implement logic to call backend cancellation function
-    if (window.confirm('Are you sure you want to cancel your subscription? This action cannot be undone.')) {
-       toast.info('Simulating subscription cancellation request...');
-       // Call backend function here
-    }
-  };
+  // const handleCancelSubscription = () => {
+  //   // TODO: Implement logic to call backend cancellation function
+  //   if (window.confirm('Are you sure you want to cancel your subscription? This action cannot be undone.')) {
+  //      toast.info('Simulating subscription cancellation request...');
+  //      // Call backend function here
+  //   }
+  // };
 
-  const handleChangePlan = () => {
-     // TODO: Implement logic to show plan change options/modal or redirect
-     toast.info('Change Plan functionality not yet implemented.');
-  };
+  // const handleChangePlan = () => {
+  //    // TODO: Implement logic to show plan change options/modal or redirect
+  //    toast.info('Change Plan functionality not yet implemented.');
+  // };
 
   // Map status to existing Badge variants
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" | null | undefined => {
@@ -138,8 +253,8 @@ export default function SalonSubscription() {
             <CardContent className="space-y-4">
               <div className="flex justify-between items-start p-4 bg-indigo-50 rounded-lg border border-indigo-100">
                 <div>
-                  <h4 className="font-semibold text-lg text-indigo-800">{subscription.planName}</h4>
-                  <p className="text-sm text-indigo-600">{subscription.priceString}</p>
+                  <h4 className="font-semibold text-lg text-indigo-800">{subs?.name}</h4>
+                  <p className="text-sm text-indigo-600">{subs?.price || 'NA'}</p>
                 </div>
                 <div className="flex space-x-2">
                   <Button variant="outline" size="sm" onClick={handleChangePlan}>Change Plan</Button>
@@ -150,9 +265,9 @@ export default function SalonSubscription() {
               </div>
               {/* Usage Limits */}
               <div className="space-y-3 pt-4">
-                 <UsageBar label="Staff Members" current={subscription.usage.staff.current} limit={subscription.usage.staff.limit} />
-                 <UsageBar label="Monthly Appointments" current={subscription.usage.appointments.current} limit={subscription.usage.appointments.limit} />
-                 <UsageBar label="Storage Used" current={subscription.usage.storage.current} limit={subscription.usage.storage.limit} unit={subscription.usage.storage.unit} />
+                 <UsageBar label="Staff Members" current={subs?.stylistCount ?? 0} limit={subs?.staffLimit ?? 0} />
+                 <UsageBar label="Monthly Appointments" current={subscription.usage.appointments.current} limit={subs?.appointments ?? 0} />
+                 <UsageBar label="customers" current={subs?.customers ?? 0} limit={subs?.customerLimit ?? 0}  />
               </div>
             </CardContent>
           </Card>
@@ -200,8 +315,8 @@ export default function SalonSubscription() {
                    {/* Basic icon mapping */}
                    <CreditCard className="h-6 w-6 text-gray-600" />
                    <div>
-                      <p className="text-sm font-medium text-gray-800 capitalize">{subscription.paymentMethod.brand} ending in {subscription.paymentMethod.last4}</p>
-                      <p className="text-xs text-gray-500">Expires {subscription.paymentMethod.expires}</p>
+                      <p className="text-sm font-medium text-gray-800 capitalize">{subs?.cardBrand} ending in {subs?.cardLast4}</p>
+                      <p className="text-xs text-gray-500">Expires {subs?.cardExpMonth} / {subs?.cardExpYear}</p>
                    </div>
                 </div>
               ) : (
@@ -230,15 +345,15 @@ export default function SalonSubscription() {
              <CardContent className="space-y-4">
                 <div>
                    <Label htmlFor="billingCompanyName">Company Name</Label>
-                   <Input id="billingCompanyName" defaultValue={subscription.billingInfo.companyName} readOnly className="mt-1 bg-gray-100"/>
+                   <Input id="billingCompanyName" defaultValue={subs?.ownerName} readOnly className="mt-1 bg-gray-100"/>
                 </div>
                 <div>
                    <Label htmlFor="billingEmail">Billing Email</Label>
-                   <Input id="billingEmail" type="email" defaultValue={subscription.billingInfo.email} readOnly className="mt-1 bg-gray-100"/>
+                   <Input id="billingEmail" type="email" defaultValue={subs?.email} readOnly className="mt-1 bg-gray-100"/>
                 </div>
                  <div>
                    <Label htmlFor="billingAddress">Billing Address</Label>
-                   <Textarea id="billingAddress" defaultValue={subscription.billingInfo.address} readOnly rows={3} className="mt-1 bg-gray-100"/>
+                   <Textarea id="billingAddress" defaultValue={subs?.address} readOnly rows={3} className="mt-1 bg-gray-100"/>
                  </div>
                  <Button variant="link" size="sm" className="p-0 h-auto" onClick={handleManageSubscription} disabled={isManaging}>
                     Update Billing Information
@@ -266,12 +381,12 @@ export default function SalonSubscription() {
                    </TableRow>
                 </TableHeader>
                 <TableBody>
-                   {subscription.invoices.length > 0 ? (
-                      subscription.invoices.map(invoice => (
+                   {subs?.invoices?.length > 0 ? (
+                      subs?.invoices.map(invoice => (
                          <TableRow key={invoice.id}>
-                            <TableCell className="font-medium">{invoice.id.substring(0, 8)}...</TableCell>
-                            <TableCell>€{invoice.amount.toFixed(2)}</TableCell>
-                            <TableCell>{new Date(invoice.date).toLocaleDateString()}</TableCell>
+                            <TableCell className="font-medium">{invoice.subscriptionName.substring(0, 8)}...</TableCell>
+                            <TableCell>€{invoice.price.toFixed(2)}</TableCell>
+                            <TableCell>{new Date(invoice.createAt).toLocaleDateString()}</TableCell>
                             <TableCell>
                                <Badge variant={invoice.status === 'Paid' ? 'default' : 'secondary'}>{invoice.status}</Badge>
                             </TableCell>
@@ -291,6 +406,75 @@ export default function SalonSubscription() {
              </Table>
           </CardContent>
        </Card>
+{showPlansDialog && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl max-h-[80vh] overflow-y-auto p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Choose a New Plan</h2>
+        <Button variant="ghost" onClick={() => setShowPlansDialog(false)}>Close</Button>
+      </div>
+
+      {plansLoading ? (
+        <div className="flex justify-center items-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin" />
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {plans.map(plan => (
+            <div
+              key={plan.id}
+              className={`border p-4 rounded-lg shadow-sm bg-gray-50 space-y-2 relative`}
+            >
+              {plan.isPopular && (
+                <span className="absolute top-2 right-2 bg-yellow-400 text-xs text-white px-2 py-1 rounded">
+                  Popular
+                </span>
+              )}
+              <h3 className="text-lg font-bold">{plan.name}</h3>
+              <p className="text-sm text-gray-600">{plan.description}</p>
+              <p className="text-sm mt-1">Monthly: ${plan.manthlyPrice} / Annual: ${plan.annualPrice}</p>
+              <p className="text-xs text-gray-500">Staff Limit: {plan.staffLimit} | Client Limit: {plan.clientLimit}</p>
+
+              {plan.features?.length > 0 && (
+                <ul className="text-xs mt-2 list-disc ml-5 text-gray-600">
+                  {plan.features.map((feature: string, index: number) => (
+                    <li key={index}>{feature}</li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="flex gap-3 mt-4">
+                <Button
+                  variant="default"
+                  size="sm"
+                  disabled={changingPlanId === plan.id}
+                  onClick={() => handlePlanSelection(plan.id, "Monthly")}
+                >
+                  {changingPlanId === plan.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  ) : null}
+                  Choose Monthly
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={changingPlanId === plan.id}
+                  onClick={() => handlePlanSelection(plan.id, "Annual")}
+                >
+                  {changingPlanId === plan.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  ) : null}
+                  Choose Annual
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
     </div>
   );

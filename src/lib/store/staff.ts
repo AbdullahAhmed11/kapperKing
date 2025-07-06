@@ -103,7 +103,7 @@ export const useStaffStore = create<StaffStore>((set, get) => ({ // Re-added 'ge
 
 
  fetchStaff: async (salonId) => {
-    const demoSalonId = 'demo-salon-id-999';
+    const demoSalonId = '1';
     if (!salonId) { set({ staff: [], loading: false, error: 'Salon ID required.' }); return; }
     if (salonId === demoSalonId) { set({ staff: [], loading: false, error: null }); return; }
 

@@ -59,6 +59,7 @@ export default function Pricing() {
     }
 
     return {
+      id: plan.id,
       name: plan.name,
       price: isAnnual ? plan.priceAnnual : plan.priceMonthly,
       description: plan.description,
@@ -110,7 +111,7 @@ export default function Pricing() {
               Start with a 14-day free trial. No credit card required.
             </p>
             {/* Billing Toggle */}
-            <div className="relative mt-6 bg-gray-100 rounded-lg p-0.5 flex self-center">
+            <div className="relative mt-6 bg-gray-100 ro unded-lg p-0.5 flex self-center">
               <button
                 type="button"
                 className={`relative w-1/2 rounded-md py-2 text-sm font-medium whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-primary focus:z-10 sm:w-auto sm:px-8 ${
@@ -147,7 +148,7 @@ export default function Pricing() {
         <div className="mt-0 space-y-4 sm:mt-0 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6 lg:max-w-4xl lg:mx-auto xl:max-w-none xl:mx-0 xl:grid-cols-3">
           {tiers.map((tier) => (
             <div
-              key={tier.name}
+              key={tier.id}
               className={`rounded-lg shadow-lg divide-y divide-gray-200 bg-white transform hover:-translate-y-1 transition-all duration-200 ${
                 tier.mostPopular ? 'ring-2 ring-primary' : ''
               }`}
@@ -163,6 +164,19 @@ export default function Pricing() {
                   </p>
                 )}
                 <p className="mt-4 text-sm text-gray-500">{tier.description}</p>
+                {/* <Link to={`/signup/${tier.id}/${tier.price}`}>
+                  Start Free Trial
+                </Link> */}
+                <Link
+  to={`/signup/${tier.id}/${tier.price}`}
+  className={`mt-6 inline-block w-full text-center text-sm font-semibold rounded-md px-6 py-3 transition-colors duration-200 
+    ${tier.mostPopular
+      ? 'bg-primary text-white hover:bg-primary/90'
+      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'}
+    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary`}
+>
+  Start Free Trial
+</Link>
                 <p className="mt-8">
                   <span className="text-4xl font-extrabold text-gray-900">€{tier.price}</span>
                   <span className="text-base font-medium text-gray-500">/mo</span>

@@ -134,7 +134,7 @@ export function BookingFlow({ salonId, clientId, onComplete, initialServiceId, i
 
         {currentStep === 'time' && selectedService && selectedStaff && (
           <TimeSelection
-            salonId={salonId}
+            salonId="1"
             serviceId={selectedService}
             staffId={selectedStaff}
             onTimeSelected={handleTimeSelected}
@@ -145,7 +145,7 @@ export function BookingFlow({ salonId, clientId, onComplete, initialServiceId, i
           />
         )}
 
-        {currentStep === 'confirm' && selectedService && selectedStaff && selectedDate && selectedTime && (
+        {currentStep === 'confirm' && (
           <BookingConfirmation
             salonId={salonId}
             serviceId={selectedService}
