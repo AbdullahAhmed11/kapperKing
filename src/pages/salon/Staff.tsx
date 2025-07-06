@@ -33,11 +33,11 @@ type JwtPayload = {
 function Staff() {
   const token = Cookies.get('salonUser');
   
-  const decoded = jwtDecode<JwtPayload>(token);
-  if (token) {
-    const decoded = jwtDecode<JwtPayload>(token);
-    console.log('User ID:', decoded.Id);
-  }
+  const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
+  // if (token) {
+  //   const decoded = jwtDecode<JwtPayload>(token);
+  //   console.log('User ID:', decoded.Id);
+  // }
 
   const [searchTerm, setSearchTerm] = useState('');
   const [stylists, setStylists] = useState<StaffMember[]>([]);

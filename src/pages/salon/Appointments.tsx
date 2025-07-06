@@ -228,20 +228,23 @@ export default function Appointments() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>(['All Staff']);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(['All Services']);
+  
 const token = Cookies.get('salonUser');
 
-const decoded = jwtDecode<JwtPayload>(token);
+// let decoded: JwtPayload | null = null;
+  const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
+
 if (token) {
-  const decoded = jwtDecode<JwtPayload>(token);
+  // decoded = jwtDecode<JwtPayload>(token);
   console.log('User ID:', decoded.Id);
 }
   const fetchAppointments = async (date: Date) => {
-    setLoading(true);
+    setLoading(true);   
     setError(null);
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
       const response = await fetch(
-        `https://kapperking.runasp.net/api/Appointments/GetAppointmentsByShop?id=${decoded.Id}&date=${formattedDate}`
+        `https://kapperking.runasp.net/api/Appointments/GetAppointmentsByShop?id=${decoded?.Id}&date=${formattedDate}`
       );
       if (!response.ok) {
         throw new Error('Failed to fetch appointments');

@@ -35,9 +35,9 @@ interface ClientState {
 }
 const token = Cookies.get('salonUser');
 
-const decoded = jwtDecode<JwtPayload>(token);
+const decoded = token ? jwtDecode<JwtPayload>(token)  : undefined;
 if (token) {
-  const decoded = jwtDecode<JwtPayload>(token);
+  // const decoded = jwtDecode<JwtPayload>(token);
   console.log('User ID:', decoded.Id);
 }
 export const useClientStore = create<ClientState>((set, get) => ({

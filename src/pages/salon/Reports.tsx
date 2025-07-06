@@ -24,11 +24,11 @@ type JwtPayload = {
 function Reports() {
     const token = Cookies.get('salonUser');
     
-    const decoded = jwtDecode<JwtPayload>(token);
-    if (token) {
-      const decoded = jwtDecode<JwtPayload>(token);
-      console.log('User ID:', decoded.Id);
-    }
+    const decoded = token ?  jwtDecode<JwtPayload>(token) : undefined;
+    // if (token) {
+    //   const decoded = jwtDecode<JwtPayload>(token);
+    //   console.log('User ID:', decoded.Id);
+    // }
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRange, setSelectedRange] = useState<string>('30'); // Default to last 30 days

@@ -644,11 +644,11 @@ type JwtPayload = {
 export function AppointmentForm({onSuccess}: any) {
   const token = Cookies.get('salonUser');
   
-  const decoded = jwtDecode<JwtPayload>(token);
+  const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
 
   if (token) {
-    const decoded = jwtDecode<JwtPayload>(token);
-    console.log('User ID:', decoded.Name);
+    // const decoded = jwtDecode<JwtPayload>(token);
+    console.log('User ID:', decoded?.Name);
   }
     interface Service {
     id: number | string;
@@ -782,7 +782,7 @@ const formatDuration = (duration: string) => {
       formData.append('ServicesIds', serviceId);
     });
   
-    formData.append('SalonId', decoded?.Id.toString());
+    formData.append('SalonId', decoded?.Id?.toString());
 
     await createAppointment(formData);
   };
