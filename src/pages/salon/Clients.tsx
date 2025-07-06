@@ -11,8 +11,28 @@ import { useClientStore, Client, AddSalonClientFormData } from '@/lib/store/clie
 import { useCurrentSalonStore } from '@/lib/store/currentSalon'; // Import current salon store
 import { formatCurrency } from '@/lib/utils'; // Assuming utils exists
 // Removed local ClientFormData definition
+import { EditClientDialog } from '@/components/clients/EditClientDialog';
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
+
+type JwtPayload = {
+  Id: number; // adjust this to match your token's structure
+  email?: string;
+  name?: string;
+  // any other fields you expect
+};
 
 function Clients() {
+
+  const token = Cookies.get('salonUser');
+  
+  // const decoded = jwtDecode<JwtPayload>(token);
+  if (token) {
+    const decoded = jwtDecode<JwtPayload>(token);
+    console.log('User ID:', decoded.Id);
+  }
+
+  
   const navigate = useNavigate(); // Initialize navigate
   const { currentSalon, loading: salonLoading, error: salonError } = useCurrentSalonStore();
   const { clients, loading, error, fetchClients, addClient, updateClient, deleteClient } = useClientStore();
@@ -30,11 +50,12 @@ function Clients() {
     // }
   }, [fetchClients]);
 
-  const handleEditClick = (client: Client, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedClient(client);
-    setShowEditClient(true);
-  };
+const handleEditClick = (client: Client, e: React.MouseEvent) => {
+  e.stopPropagation();
+  setSelectedClient(client);
+  setShowEditClient(true);
+};
+
 
   const handleDeleteClick = async (client: Client, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -47,8 +68,10 @@ function Clients() {
   const handleNewClientSubmit = async (data: ClientFormData) => { 
     if (!currentSalon?.id) {
       toast.error("Cannot add client: Salon context missing.");
+      
       return;
     }
+    console.log(currentSalon?.id, "currentSalon?.id")
     // Construct the payload expected by the store's addClient action
     const payload: AddSalonClientFormData = {
       ...data,
@@ -64,20 +87,33 @@ function Clients() {
   };
 
   // Use ClientFormData type from the form component
-  const handleEditClientSubmit = async (data: ClientFormData) => { 
-     if (!selectedClient) return;
-     // Construct the payload expected by the store's updateClient action
-     const payload: Partial<Client> = {
-        ...data,
-        // Ensure email is not undefined if required by Partial<Client>
-        email: data.email || selectedClient.email, // Keep original if form sends undefined
-     };
-     const success = await updateClient(selectedClient.id, payload);
-     if (success) {
-       setShowEditClient(false);
-       setSelectedClient(null);
-     }
-   };
+const handleEditClientSubmit = async (data: Client) => {
+  try {
+    const formData = new FormData();
+formData.append('Id', selectedClient?.id);
+formData.append('FirstName', data.firstName);
+formData.append('LastName', data.lastName);
+formData.append('Email', data.email);
+if (data.phone) formData.append('Phone', data.phone);
+if ((data as any).password) formData.append('Password', (data as any).password);
+
+ const response = await fetch('https://kapperking.runasp.net/api/Users/EditAdmin', {
+  method: 'POST',
+  body: formData,
+  // Remove 'Content-Type' header (FormData sets it automatically)
+});
+
+    if (!response.ok) throw new Error('Failed to update client');
+    
+    toast.success("Client updated successfully!");
+    fetchClients(); // Refresh the list
+    return true;
+  } catch (error) {
+    toast.error("Error updating client");
+    console.error(error);
+    return false;
+  }
+};
 
   // Navigate to appointment page, passing client ID
   const handleBookAppointment = (client: Client) => {
@@ -103,6 +139,12 @@ function Clients() {
   // if (!currentSalon) {
   //    return <div className="p-6 text-center text-gray-500">No active salon associated with this account.</div>;
   // }
+  console.log(selectedClient, "selectedClient")
+
+const handleEditSuccess = () => {
+  fetchClients(); // Refresh the client list
+  toast.success('Client updated successfully!');
+};
 
   return (
     <div className="space-y-6">
@@ -111,7 +153,8 @@ function Clients() {
           <h1 className="text-2xl font-semibold text-gray-900">Clients</h1>
           <p className="mt-1 text-sm text-gray-500">Manage your client database</p>
         </div>
-    <AddClientDialog onClientAdded={fetchClients} />      </div>
+    {/* <AddClientDialog onClientAdded={fetchClients} />   */}
+        </div>
 
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="p-6">
@@ -187,20 +230,14 @@ function Clients() {
       />
 
       {/* Edit Client Form */}
-      <ClientForm
-        open={showEditClient}
-        onClose={() => { setShowEditClient(false); setSelectedClient(null); }}
-        onSubmit={handleEditClientSubmit}
-        initialData={selectedClient ? { // Map Client to Partial<ClientFormData>
-            firstName: selectedClient.firstName,
-            lastName: selectedClient.lastName,
-            email: selectedClient.email || undefined,
-            phone: selectedClient.phone || undefined,
-            notes: selectedClient.notes || undefined,
-            marketingConsent: selectedClient.marketingConsent
-        } : undefined}
-        title="Edit Client"
-      />
+   {showEditClient && (
+  <EditClientDialog
+    open={showEditClient}
+    onClose={() => setShowEditClient(false)}
+    client={selectedClient}
+    onSuccess={handleEditSuccess}
+/>
+)}
 
     </div> // Closing main div
   );

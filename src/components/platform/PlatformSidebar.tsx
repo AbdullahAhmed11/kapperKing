@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -17,6 +17,8 @@ import {
 // import { Logo } from '@/components/marketing/Logo'; // Remove Logo import
 import { useAuth } from '@/lib/auth';
 import { useThemeStore } from '@/lib/theme'; // Import theme store
+import axios from 'axios';
+import { get } from 'http';
 
 const navigation = [
   { name: 'Dashboard', href: '/platform', icon: LayoutDashboard },
@@ -39,6 +41,39 @@ function PlatformSidebar({ isCollapsed, toggleSidebar }: PlatformSidebarProps) {
   const location = useLocation();
   const { signOut } = useAuth();
   const { dashboardSidebarColor, dashboardLogoUrl, dashboardSidebarTextColor } = useThemeStore((state) => state.currentTheme);
+  interface Branding {
+    sideBarLogo?: string;
+    // Add other branding properties if needed
+  }
+  interface ColorPalette {
+    dashboardSidebarBG?: string;
+  }
+  const [branding, setBranding] = useState<Branding | null>(null)
+  const [colorPalette, setColorPalette] = useState<ColorPalette | null>(null);
+
+  const GetBranding = async () => {
+    try {
+      const response = await axios.get(`https://kapperking.runasp.net/api/SuperAdmin/GetBranding`)
+      setBranding(response.data);
+    }catch (error) {
+      console.error('Error fetching branding:', error);
+    }
+  }
+
+  const GetColorPalette = async () => {
+    try {
+      const response =  await axios.get(`https://kapperking.runasp.net/api/SuperAdmin/GetColorPalette`)
+      setColorPalette(response.data);
+    }catch (error) {
+      console.error('Error fetching color palette:', error);
+    }
+   }
+
+  useEffect(() => {
+    GetBranding();
+    GetColorPalette();
+  },[])
+
   return (
     <div 
       className={`
@@ -52,7 +87,7 @@ function PlatformSidebar({ isCollapsed, toggleSidebar }: PlatformSidebarProps) {
       {/* Apply dynamic background color via inline style */}
       <div
         className="flex flex-col flex-grow pt-5 pb-4 overflow-y-auto"
-        style={{ backgroundColor: dashboardSidebarColor || '#1F2937' }} // Fallback color
+        style={{ backgroundColor: colorPalette?.dashboardSidebarBG || '#1F2937' }} // Fallback color
       >
         {/* Adjust container: Add fixed height, center when collapsed */}
         {/* Adjust container: Add fixed height, center items */}
@@ -60,8 +95,8 @@ function PlatformSidebar({ isCollapsed, toggleSidebar }: PlatformSidebarProps) {
           {/* Logo Wrapper - Takes full width in its area, hidden when collapsed */}
           <div className={`w-full pr-4 ${isCollapsed ? 'hidden' : 'block'}`}> {/* Added w-full, pr-4 to give space for button */}
              <img
-               src={dashboardLogoUrl || '/logos/dashboard-logo.png'}
-               alt="Dashboard Logo"
+               src={branding?.sideBarLogo || '/logos/dashboard-logo.png'}
+               alt="Dashboard Logo11"
                // Style for responsive, contained logo:
                className="block w-full max-h-12 object-contain mx-auto"
              />

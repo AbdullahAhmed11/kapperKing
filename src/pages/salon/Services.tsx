@@ -7,7 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import axios from 'axios';
-
+import { EditServiceForm } from '@/components/services/EditServiceForm';
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
 // Define Service interface based on your API response
 interface Service {
   id: number;
@@ -28,10 +30,24 @@ type ServiceFormData = {
   price: number;
   description?: string;
 };
-
+type JwtPayload = {
+  Id: number; // adjust this to match your token's structure
+  email?: string;
+  name?: string;
+  // any other fields you expect
+};
 const API_URL = 'https://kapperking.runasp.net/api/Services';
 
 function Services() {
+
+  const token = Cookies.get('salonUser');
+  
+  const decoded = jwtDecode<JwtPayload>(token);
+  if (token) {
+    const decoded = jwtDecode<JwtPayload>(token);
+    console.log('User ID:', decoded.Id);
+  }
+
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +60,7 @@ function Services() {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/Getservices/1`);
+      const response = await axios.get(`${API_URL}/Getservices/${decoded?.Id}`);
       setServices(response.data);
       setError(null);
     } catch (err) {
@@ -54,6 +70,7 @@ function Services() {
       setLoading(false);
     }
   };
+  
   const createService = async (data: ServiceFormData) => {
     try {
       const formData = new FormData();
@@ -68,7 +85,7 @@ function Services() {
       formData.append('Price', data.price.toString());
       // formData.append('CategoryId', data.category.toString());
       formData.append('CategoryId', "1");
-      formData.append('SalonId', '1'); // Hardcoded as per requirements
+      formData.append('SalonId', decoded?.Id); // Hardcoded as per requirements
 
       await axios.post(`${API_URL}/Addservice`, formData, {
         headers: {
@@ -87,17 +104,7 @@ function Services() {
   };
 
   // Update service
-  const updateService = async (id: number, data: ServiceFormData) => {
-    try {
-      await axios.put(`${API_URL}/UpdateService/${id}`, data);
-      toast.success('Service updated successfully');
-      fetchServices();
-      return true;
-    } catch (err) {
-      toast.error('Failed to update service');
-      return false;
-    }
-  };
+
 
     // Delete service
   const deleteService = async (id: number) => {
@@ -146,14 +153,7 @@ function Services() {
     }
   };
 
-  const handleEditServiceSubmit = async (data: ServiceFormData) => {
-    if (!selectedService) return;
-    const success = await updateService(selectedService.id, data);
-    if (success) {
-      setShowEditService(false);
-      setSelectedService(null);
-    }
-  };
+
 
   const filteredServices = services.filter(service =>
     service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -170,7 +170,37 @@ function Services() {
   if (error) {
     return <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700">Error loading services: {error}</div>;
   }
-
+const updateService = async (id: number, data: ServiceFormData) => {
+  try {
+    const formData = new FormData();
+    formData.append('Id', id.toString());
+    formData.append('Name', data.name);
+    if (data.description) formData.append('Description', data.description);
+    
+    // Convert minutes to timespan format (HH:MM:00)
+    const hours = Math.floor(data.duration / 60);
+    const minutes = data.duration % 60;
+    const timeSpanString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+    formData.append('Duration', timeSpanString);
+    
+    formData.append('Price', data.price.toString());
+    formData.append('CategoryId', "1"); // Or use data.category if available
+    
+    await axios.put(`${API_URL}/Editservice`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    toast.success('Service updated successfully');
+    fetchServices(); // Refresh the services list
+    return true;
+  } catch (err) {
+    toast.error('Failed to update service');
+    console.error('Error updating service:', err);
+    return false;
+  }
+};
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -277,13 +307,27 @@ function Services() {
       />
 
       {/* Edit Service Form Dialog */}
-      <ServiceForm
-        open={showEditService}
-        onClose={() => { setShowEditService(false); setSelectedService(null); }}
-        onSubmit={handleEditServiceSubmit}
-        initialData={selectedService || undefined}
-        title="Edit Service"
+  {/* Edit Service Form Dialog */}
+{showEditService && selectedService && (
+  <Dialog open={showEditService} onOpenChange={setShowEditService}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Edit Service</DialogTitle>
+      </DialogHeader>
+      <EditServiceForm
+        initialData={{
+          name: selectedService.name,
+          category: selectedService.categoryName,
+          duration: selectedService.duration,
+          price: selectedService.price,
+          description: selectedService.description || ''
+        }}
+        onSubmit={updateService}
+        onCancel={() => setShowEditService(false)}
       />
+    </DialogContent>
+  </Dialog>
+)}
     </div>
   );
 }

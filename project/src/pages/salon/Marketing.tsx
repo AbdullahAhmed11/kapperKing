@@ -38,7 +38,7 @@ function Marketing() {
   return (
     <div>
       <div className="pb-5 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-gray-900">Marketing</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">Marketing33</h1>
         <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
           <Plus className="h-5 w-5 mr-2" />
           New Campaign

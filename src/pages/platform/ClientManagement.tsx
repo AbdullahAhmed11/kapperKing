@@ -147,13 +147,13 @@ function ClientManagement() {
           <h1 className="text-2xl font-semibold text-gray-900">Client Management</h1>
           <p className="mt-1 text-sm text-gray-500">Manage platform clients and their salon access</p>
         </div>
-        <Button 
+        {/* <Button 
           onClick={() => setShowNewClient(true)}
           style={{ color: dashboardButtonTextColor || '#FFFFFF' }} // Apply text color
         >
           <Plus className="h-4 w-4 mr-2" />
           Add New Client
-        </Button>
+        </Button> */}
       </div>
 
       {/* Search and Filters */}

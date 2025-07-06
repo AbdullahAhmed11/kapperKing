@@ -12,7 +12,17 @@ import { useCurrentSalonStore, Salon } from '@/lib/store/currentSalon';
 import { ExternalLink } from 'lucide-react'; // Import ExternalLink icon
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react'; // Import Loader
-
+import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie'; 
+type JwtPayload = {
+  Id: number; // adjust this to match your token's structure
+  email?: string;
+  name?: string;
+  FirstName?: string;
+  LastName?: string;
+  // any other fields you expect
+};
 // Schema matching editable fields in the 'salons' table and Salon interface
 const salonSettingsSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -25,7 +35,7 @@ const salonSettingsSchema = z.object({
   country: z.string().optional().nullable(),
   timezone: z.string().optional().nullable(),
   currency: z.string().optional().nullable(),
-  dashboard_primary_color: z.string().optional().nullable(), // Add dashboard color schema
+  primaryColor: z.string().optional().nullable(), // Add dashboard color schema
   dashboard_secondary_color: z.string().optional().nullable(), // Add dashboard color schema
 });
 
@@ -33,6 +43,16 @@ const salonSettingsSchema = z.object({
 type SalonSettingsFormData = z.infer<typeof salonSettingsSchema>;
 
 export default function Settings() {
+ 
+  const token = Cookies.get('salonUser');
+  const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
+  if (token && decoded) {
+    console.log('User ID:', decoded.Id);
+  }
+
+
+
+
   const [isConnectingStripe, setIsConnectingStripe] = useState(false); // State for button loading
   // Use the correct store
   const { currentSalon, updateCurrentSalonDetails, initiateStripeConnectOnboarding, loading, error } = useCurrentSalonStore(); // Add onboarding action
@@ -43,37 +63,42 @@ export default function Settings() {
   });
 
   // Populate form when currentSalon data loads or changes
-  useEffect(() => {
-    if (currentSalon) {
-      reset({
-        name: currentSalon.name || '',
-        email: currentSalon.email || null,
-        phone: currentSalon.phone || null,
-        address_line1: currentSalon.address_line1 || null,
-        address_line2: currentSalon.address_line2 || null,
-        city: currentSalon.city || null,
-        postal_code: currentSalon.postal_code || null,
-        country: currentSalon.country || null,
-        timezone: currentSalon.timezone || null,
-        currency: currentSalon.currency || null,
-        // Add dashboard colors to reset
-        dashboard_primary_color: currentSalon.dashboard_primary_color || null,
-        dashboard_secondary_color: currentSalon.dashboard_secondary_color || null,
-      });
-    }
-  }, [currentSalon, reset]);
 
-  const onSubmit = async (data: SalonSettingsFormData) => {
-    if (!currentSalon?.id) {
-       toast.error("Cannot update settings: Salon context missing.");
-       return;
+const onSubmit = async (data: SalonSettingsFormData) => {
+  if (!decoded?.Id) {
+    toast.error("User ID missing.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("Id", decoded.Id.toString());
+  formData.append("Name", data.name);
+  if (data.email) formData.append("Email", data.email);
+  if (data.phone) formData.append("SalonPhone", data.phone);
+  if (data.address_line1) formData.append("Address", data.address_line1); // assuming line1 = main address
+  if (data.city) formData.append("City", data.city);
+  if (data.postal_code) formData.append("PostalCode", data.postal_code);
+  if (data.country) formData.append("Country", data.country);
+  if (data.timezone) formData.append("Timezone", data.timezone);
+  if (data.currency) formData.append("Currency", data.currency);
+  if (data.primaryColor) formData.append("PrimaryColor", data.primaryColor);
+  if (data.dashboard_secondary_color) formData.append("SecondaryColor", data.dashboard_secondary_color);
+  // Add other fields if needed
+
+  try {
+    const response = await axios.put("https://kapperking.runasp.net/api/Salons/EditSalon", formData);
+    if (response.status === 200) {
+      toast.success("Salon updated successfully");
+      reset(data); // Update form dirty state
+    } else {
+      toast.error(`Update failed with status ${response.status}`);
     }
-    // The data object already matches the required Partial<Omit<...>> type
-    // because the schema only includes editable fields.
-    await updateCurrentSalonDetails(currentSalon.id, data);
-    // Store action handles success/error toasts
-    reset(data); // Reset dirty state after successful save
-  };
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || "Error updating salon");
+    console.error(error);
+  }
+};
+
 
   if (loading && !currentSalon) { // Show loading only if salon hasn't loaded yet
     return (
@@ -87,12 +112,37 @@ export default function Settings() {
      return <div className="p-4 text-red-700">Error loading settings: {error}</div>;
   }
 
-  if (!currentSalon) {
-     return <div className="p-6 text-center text-gray-500">Salon data not available.</div>;
-  }
+  // if (!currentSalon) {
+  //    return <div className="p-6 text-center text-gray-500">Salon data not available.</div>;
+  // }
 
-
-  return (
+    const [dataInfo, setDataInfo] = useState(null)
+    const getInfoData = async () => {
+      try {
+        const res = await axios.get(`https://kapperking.runasp.net/api/Salons/GetSalonById/${decoded?.Id}`)
+        setDataInfo(res.data)
+          reset({
+        name: res.data.name,
+        email: res.data.email,
+        phone: res.data.salonPhone,
+        address_line1: res.data.address,
+        address_line2: res.data.address,
+        city: res.data.city,
+        postal_code: res.data.postalCode,
+        country: res.data.country,
+        timezone: res.data.timezone,
+        primaryColor: res.data.primaryColor,
+        dashboard_secondary_color: res.data.secondaryColor
+        // Add other fields here if needed
+      });
+      }catch(error){
+        console.log(error)
+      }
+    }
+    useEffect(() => {
+      getInfoData()
+    },[])
+   return (
     <div className="max-w-4xl mx-auto">
       <div className="space-y-6 divide-y divide-gray-200">
         <div>
@@ -182,19 +232,19 @@ export default function Settings() {
                         type="color"
                         id="dashboardPrimaryColor"
                         // Use defaultValue from currentSalon, register for form state
-                        defaultValue={currentSalon?.dashboard_primary_color || '#4f46e5'} // Default Indigo
-                        {...register('dashboard_primary_color')}
+                        defaultValue={dataInfo?.primaryColor || '#4f46e5'} // Default Indigo
+                        {...register('primaryColor')}
                         className="w-12 p-1 rounded-l-md border-r-0"
                      />
                      <Input
                         type="text"
                         // Use defaultValue from currentSalon, register for form state
-                        defaultValue={currentSalon?.dashboard_primary_color || '#4f46e5'}
-                        {...register('dashboard_primary_color')}
+                        defaultValue={dataInfo?.primaryColor|| '#4f46e5'}
+                        {...register('primaryColor')}
                         className="flex-1 rounded-l-none"
                      />
                   </div>
-                  {errors.dashboard_primary_color && <p className="mt-1 text-sm text-red-600">{errors.dashboard_primary_color.message}</p>}
+                  {errors.primaryColor && <p className="mt-1 text-sm text-red-600">{errors.primaryColor.message}</p>}
                </div>
                {/* Secondary Color */}
                 <div className="sm:col-span-3">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -49,6 +49,20 @@ export function BookingConfirmation({
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<GuestBookingFormData>({
     resolver: zodResolver(guestBookingSchema)
   });
+
+
+  useEffect(() => {
+    console.log('BookingConfirmation rendered with:', {
+      salonId,
+      serviceId,
+      staffId,
+      date,
+      time,
+      isGuestBookingAllowed,
+      requireDeposit,
+      depositAmount
+    });
+  },[])
 
   const handleConfirm = async (data: GuestBookingFormData) => {
     const { notes, ...guestInfo } = data;

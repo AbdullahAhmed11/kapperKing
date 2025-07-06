@@ -3,11 +3,12 @@ import { Plus, Search, Edit2, Trash2, Store, Users, Calendar, Settings } from 'l
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { SalonForm, SalonSubmitData } from '@/components/platform/forms/SalonForm'; // Import SalonSubmitData
+import { SalonForm, SalonSubmitData, SalonFormData } from '@/components/platform/forms/SalonForm'; // Import SalonSubmitData and SalonFormData
 import { useSalonStore, selectAllSalons, Salon, AddSalonPayload } from '@/lib/store/salons'; // Import salon store
 import { useClientStore, selectAllClients, Client } from '@/lib/store/clients';
 import { useSubscriptionPlanStore, selectAllPlans } from '@/lib/store/subscriptionPlans';
-
+import AddSalonForm from '@/components/platform/forms/AddSalonForm';
+import EditSalonForm from '@/components/platform/forms/EditSalonForm';
 function SalonManagement() {
   const [showNewSalon, setShowNewSalon] = useState(false);
   const [showEditSalon, setShowEditSalon] = useState(false);
@@ -21,6 +22,7 @@ function SalonManagement() {
     fetchSalonById, // Add this
     currentSalon // Add this to access the fetched salon
   } = useSalonStore();  // Get data from stores
+const [editingSalonId, setEditingSalonId] = useState<number | null>(null);
 
   // const salons = useSalonStore(selectAllSalons);
   const clients = useClientStore(selectAllClients);
@@ -70,16 +72,26 @@ function SalonManagement() {
     // Error toast for validation failure is also handled in the store action
   };
 
-  const handleEditClick = async (salonId: number) => {
-    try {
-      const salon = await fetchSalonById(salonId);
-      console.log("select", salon);
-      setSelectedSalon(salon);
-      setShowEditSalon(true);
-    } catch (error) {
-      toast.error('Failed to load salon details');
-    }
-  };
+  // const handleEditClick = async (salonId: number) => {
+  //   try {
+  //     const salon = await fetchSalonById(salonId);
+  //     console.log("select", salon);
+  //     setSelectedSalon(salon);
+  //     setShowEditSalon(true);
+  //   } catch (error) {
+  //     toast.error('Failed to load salon details');
+  //   }
+  // };
+const handleEditClick = async (salonId: number) => {
+  try {
+
+    const salon = await fetchSalonById(salonId);
+    setEditingSalonId(salonId);
+    setShowEditSalon(true);
+  }catch(error) {
+    console.log(error)
+  }
+};
 
   // Use correct type and action for editing
   console.log("Editing salon:", selectedSalon);
@@ -93,27 +105,28 @@ function SalonManagement() {
   //      toast.error('No salon selected for editing.');
   //   }
   // };
-  const handleEditSalonSubmit = async (data: {
-    name: string;
-    address: string;
-    city: string;
-    postalCode: string;
-    country: string;
-    salonPhone: string;
-    website?: string;
-  }) => {
-    if (selectedSalon) {
-      try {
-        await updateSalon(selectedSalon.id, data);
-        setShowEditSalon(false);
-        setSelectedSalon(null);
-      } catch (error) {
-        // Error handling is already done in the store
-      }
-    } else {
-      toast.error('No salon selected for editing.');
-    }
-  };
+  // const handleEditSalonSubmit = async (data: {
+  //   name: string;
+  //   address: string;
+  //   city: string;
+  //   postalCode: string;
+  //   country: string;
+  //   salonPhone: string;
+  //   website?: string;
+  // }) => {
+  //   if (selectedSalon) {
+  //     try {
+  //       await updateSalon(selectedSalon.id, data);
+  //       setShowEditSalon(false);
+  //       setSelectedSalon(null);
+  //     } catch (error) {
+  //       // Error handling is already done in the store
+  //     }
+  //   } else {
+  //     toast.error('No salon selected for editing.');
+  //   }
+  // };
+
   const handleDeleteSalon = async (salonId: string) => {
     try {
       // TODO: Implement salon deletion logic using store action
@@ -129,6 +142,36 @@ function SalonManagement() {
   const filteredSalons = salons.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  console.log("Filtered salons:", filteredSalons);
+
+  const handleEditSalonSubmit = async (data: SalonFormData) => {
+  if (selectedSalon) {
+    try {
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined) {
+          formData.append(key, value);
+        }
+      });
+
+      const response = await fetch(`https://kapperking.runasp.net/api/Salons/UpdateSalon/${selectedSalon.id}`, {
+        method: 'PUT',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update salon');
+      }
+
+      await fetchSalons(); // Refresh the list
+      toast.success('Salon updated successfully');
+      setShowEditSalon(false);
+    } catch (error) {
+      toast.error('Failed to update salon');
+    }
+  }
+};
+
 
   return (
     <div className="space-y-6">
@@ -204,7 +247,7 @@ function SalonManagement() {
                   </div>
                   <div className="min-w-0"> {/* Added min-w-0 for truncation */}
                     <h3 className="text-lg font-medium text-gray-900 truncate">{salon.name}</h3> {/* Added truncate */}
-                    <p className="text-sm text-gray-500 truncate">Owner: {client ? `${client.name}` : 'Unknown'}</p> 
+                    <p className="text-sm text-gray-500 truncate">Owner: {salon.ownerName}</p> 
                   </div>
                 </div>
                 <div className="flex space-x-2 flex-shrink-0"> {/* Added flex-shrink-0 */}
@@ -232,7 +275,7 @@ function SalonManagement() {
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center text-gray-500">
                     <Settings className="h-4 w-4 mr-1" />
-                    <span>{plan?.name || 'No Plan'}</span> 
+                    <span>{salon.planName || 'No Plan'}</span> 
                   </div>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     subscriptionStatus === 'active' || subscriptionStatus === 'trialing' ? 'bg-green-100 text-green-800' : 
@@ -249,14 +292,28 @@ function SalonManagement() {
       </div>
 
       {/* Forms */}
-      <SalonForm
+      {/* <SalonForm
         open={showNewSalon}
         onClose={() => setShowNewSalon(false)}
         onSubmit={handleNewSalonSubmit}
         availableClients={clients} // Pass clients list
-      />
-
-      <SalonForm
+      /> */}
+<EditSalonForm
+  open={showEditSalon}
+  onClose={() => {
+    setShowEditSalon(false);
+    setEditingSalonId(null);
+  }}
+  salonId={editingSalonId}
+  onSuccess={() => {
+    fetchSalons(); // Refresh the list after successful edit
+  }}
+/>
+  <AddSalonForm
+       open={showNewSalon}
+        onClose={() => setShowNewSalon(false)}
+  />
+      {/* <SalonForm
         open={showEditSalon}
         onClose={() => {
           setShowEditSalon(false);
@@ -266,7 +323,7 @@ function SalonManagement() {
         initialData={selectedSalon}
         title="Edit Salon"
         availableClients={clients} // Pass clients list
-      />
+      /> */}
     </div>
   );
 }

@@ -92,9 +92,10 @@ function Marketing() {
   if (combinedError) {
      return <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700">Error loading marketing data: {combinedError}</div>;
   }
-   if (!isLoading && !currentSalon) {
-     return <div className="p-6 text-center text-gray-500">No active salon associated with this account.</div>;
-  }
+
+  //  if (!isLoading && !currentSalon) {
+  //    return <div className="p-6 text-center text-gray-500">No active salon associated with this account.</div>;
+  // }
 
 
   return (
@@ -103,7 +104,7 @@ function Marketing() {
         <h1 className="text-2xl font-semibold text-gray-900">Marketing</h1>
         <Button onClick={handleAddNew}>
           <Plus className="h-4 w-4 mr-2" />
-          New Campaign
+          {/* New Campaignn */}
         </Button>
       </div>
 

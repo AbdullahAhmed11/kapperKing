@@ -7,9 +7,31 @@ import { useSubscriberStore, selectSubscriberCount, selectAllSubscribers, Subscr
 import { toast } from 'sonner'; 
 import { CampaignForm } from '@/components/platform/forms/CampaignForm'; 
 import { SubscriberList } from '@/components/platform/marketing/SubscriberList'; 
+import axios from 'axios';
 const API_BASE_URL = 'https://kapperking.runasp.net/api/SuperAdmin';
 
 export default function MarketingManagement() {
+  const [statics, setStatics] = useState<any>(null); // State for stats
+  const [staticsLoading, setStaticsLoading] = useState(true); // Loading state for stats
+
+  const getMarktingStatics = async () => {
+    try {
+      const response = await axios.get(`https://kapperking.runasp.net/api/SuperAdmin/GetMarketingStatics`);
+   
+      const data = await response.data;
+      setStatics(data);
+    } catch (error) {
+      console.error('Error fetching marketing statistics:', error);   
+      toast.error('Failed to load marketing statistics');
+    } finally {   
+      setStaticsLoading(false); // Set loading to false after fetching
+    }
+
+  }
+
+  useEffect(() => {
+    getMarktingStatics()
+  },[])
 
   const [campaigns, setCampaigns] = useState<any[]>([]); // Local state for campaigns
   const [isLoading, setIsLoading] = useState(true);
@@ -130,7 +152,7 @@ export default function MarketingManagement() {
                  <dl>
                    <dt className="text-sm font-medium text-gray-500 truncate">Total Subscribers</dt>
                    <dd className="flex items-baseline">
-                     <div className="text-2xl font-semibold text-gray-900">{subscriberCount.toLocaleString()}</div> 
+                     <div className="text-2xl font-semibold text-gray-900">{statics?.subscribers}</div> 
                    </dd>
                  </dl>
                </div>

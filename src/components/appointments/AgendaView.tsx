@@ -102,28 +102,30 @@ export function AgendaView({ appointments, onTimeSlotClick, date }: AgendaViewPr
           {appointments.map((appointment) => (
             <div
               key={appointment.id}
-              className={`absolute rounded-lg border p-2 shadow-sm transition-all duration-200 hover:shadow-md cursor-pointer ${getStatusColor()}`}
+              className={`absolute rounded-lg border p-2  shadow-sm transition-all duration-200 hover:shadow-md cursor-pointer ${getStatusColor()}`}
               style={getAppointmentStyle(appointment)}
               onClick={() => console.log('Appointment clicked:', appointment.id)}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
+              <div className="flex  justify-between">
+                <div className="flex ">
                   <Clock className="h-4 w-4 mr-2" />
                   <span className="text-sm font-medium">
-                    {appointment.startAt.substring(0, 5)} {/* Show only HH:mm */}
+                    {appointment.startAt.substring(0, 5)} 
                   </span>
+                  
                 </div>
                 <span className="text-xs font-medium">
                   {appointment.duration}min
-                </span>
-              </div>
-              <div className="mt-1">
-                <div className="text-sm font-medium">
-                  {appointment.customerName}
-                </div>
-                <div className="text-xs">
+                    <div className="text-xs">
                   {appointment.services.join(', ')} with {appointment.stylistName}
                 </div>
+                </span>
+              </div>
+                <div className="text-sm mb-6 font-medium">
+                  {appointment.customerName}
+                </div>
+              <div className="">
+              
               </div>
             </div>
           ))}
@@ -138,6 +140,7 @@ export function AgendaView({ appointments, onTimeSlotClick, date }: AgendaViewPr
           >
             <div className="absolute -top-[5px] -left-[5px] w-[10px] h-[10px] rounded-full bg-red-500" />
           </div>
+          
         </div>
       </div>
     </div>

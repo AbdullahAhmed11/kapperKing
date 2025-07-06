@@ -4,14 +4,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Assuming Select component exists
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; // Assuming Table component exists
 import axios from 'axios';
-
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
 // Placeholder types - replace with actual types later
-type Metric = { name: string; value: string; change: string; trend: 'up' | 'down'; icon: React.ElementType; color: string; };
-type RevenueDataPoint = { month: string; value: number; };
-type TopService = { name: string; count: number; revenue: string; growth: string; };
-type PerformanceMetric = { name: string; value: string; icon: React.ElementType; };
 
+type Metric = { name: string; value: string; change: string; trend: 'up' | 'down'; icon: React.ElementType; color: string; };
+
+type RevenueDataPoint = { month: string; value: number; };
+
+type TopService = { name: string; count: number; revenue: string; growth: string; };
+
+type PerformanceMetric = { name: string; value: string; icon: React.ElementType; };
+type JwtPayload = {
+  Id: number; // adjust this to match your token's structure
+  email?: string;
+  name?: string;
+  // any other fields you expect
+};
 function Reports() {
+    const token = Cookies.get('salonUser');
+    
+    const decoded = jwtDecode<JwtPayload>(token);
+    if (token) {
+      const decoded = jwtDecode<JwtPayload>(token);
+      console.log('User ID:', decoded.Id);
+    }
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedRange, setSelectedRange] = useState<string>('30'); // Default to last 30 days
@@ -23,7 +40,7 @@ function Reports() {
 
   const fetchData = async () => {
     try{
-      const res = await axios.get(`https://kapperking.runasp.net/api/Salons/GetStatistics?id=1`)
+      const res = await axios.get(`https://kapperking.runasp.net/api/Salons/GetStatistics?id=${decoded?.Id}`)
       setData(res.data);
       console.log("Fetched data:", res.data);
     }catch (error) {
@@ -158,6 +175,7 @@ function Reports() {
       const fetchDatas = async () => {
       // setLoading(true);
       // setError(null);
+
       try {
         // TODO: Replace with actual API call based on selectedRange
         console.log(`Fetching data for range: ${selectedRange} days`);
@@ -166,10 +184,10 @@ function Reports() {
 
         // Simulate fetching data - replace with actual fetch logic
         setMetricsData([
-          { name: 'Revenue', value: data.revenue, change: '+12.5%', trend: 'up', icon: DollarSign, color: 'from-primary-500 to-primary-600' },
-          { name: 'New Clients', value: data.newClients, change: '+8.2%', trend: 'up', icon: Users, color: 'from-pink-500 to-pink-600' },
-          { name: 'Average Service Value', value: data.averageServiceValue, change: '+5.4%', trend: 'up', icon: TrendingUp, color: 'from-indigo-500 to-indigo-600' },
-          { name: 'Appointments', value: data.appointments, change: '-2.1%', trend: 'down', icon: Calendar, color: 'from-purple-500 to-purple-600' }
+          { name: 'Revenue', value: data?.revenue, change: '+12.5%', trend: 'up', icon: DollarSign, color: 'from-primary-500 to-primary-600' },
+          { name: 'New Clients', value: data?.newClients, change: '+8.2%', trend: 'up', icon: Users, color: 'from-pink-500 to-pink-600' },
+          { name: 'Average Service Value', value: data?.averageServiceValue, change: '+5.4%', trend: 'up', icon: TrendingUp, color: 'from-indigo-500 to-indigo-600' },
+          { name: 'Appointments', value: data?.appointments, change: '-2.1%', trend: 'down', icon: Calendar, color: 'from-purple-500 to-purple-600' }
         ]);
         setRevenueChartData([
           { month: 'Jan', value: 12500 }, { month: 'Feb', value: 14200 }, { month: 'Mar', value: 16800 },
@@ -205,7 +223,7 @@ function Reports() {
 
       } catch (err) {
         console.error("Failed to fetch report data:", err);
-        // setError("Failed to load report data. Please try again later.");
+         // setError("Failed to load report data. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -246,6 +264,7 @@ useEffect(() => {
 
   return (
     <div className="space-y-6">
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Analytics Dashboard</h1>
@@ -410,6 +429,7 @@ useEffect(() => {
           </div>
         </CardContent>
       </Card>
+
     </div> 
   );
 } 

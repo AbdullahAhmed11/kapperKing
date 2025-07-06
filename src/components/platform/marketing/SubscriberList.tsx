@@ -1,11 +1,14 @@
-import React, { useState } from 'react'; // Import useState
+import React, { useState, useEffect } from 'react'; // Import useState
 import { useSubscriberStore, selectAllSubscribers, Subscriber } from '@/lib/store/subscribers'; // Import Subscriber type
 import { Button } from '@/components/ui/button';
 import { Trash2, Mail as MailIcon } from 'lucide-react'; // Import Mail icon
 import { toast } from 'sonner'; 
 import { IndividualEmailForm } from './IndividualEmailForm'; // Import the new form
+import axios from 'axios';
 
 export function SubscriberList() {
+  const [allsubscribers, setAllSubscripers] = useState<any[]>([]); // Local state for subscribers
+
   const subscribers = useSubscriberStore(selectAllSubscribers);
   const deleteSubscriber = useSubscriberStore((state) => state.deleteSubscriber); 
   const [showEmailForm, setShowEmailForm] = useState(false); // State for modal visibility
@@ -29,6 +32,23 @@ export function SubscriberList() {
   };
   console.log('Subscribers:', subscribers); // Debugging line
 
+  const getAllSubscribers = async () => {
+    try { 
+      const res = await axios.get('https://kapperking.runasp.net/api/SuperAdmin/GetSubscribers');
+      const data = res.data || [];
+      console.log('Fetched subscribers:', data); // Debugging line
+      setAllSubscripers(data);
+    } catch (error) {
+      console.error('Failed to fetch subscribers:', error);
+      toast.error('Failed to fetch subscribers');
+    }
+  };
+
+  useEffect(() => { 
+    getAllSubscribers();
+  }, []);
+
+
   return (
     <div className="bg-white shadow rounded-lg border">
       <div className="p-6 border-b">
@@ -47,12 +67,12 @@ export function SubscriberList() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {subscribers.length === 0 && (
+            {allsubscribers.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">No subscribers yet.</td>
               </tr>
             )}
-            {subscribers.map((subscriber) => (
+            {allsubscribers.map((subscriber) => (
               <tr key={subscriber.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{subscriber.email}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{subscriber.name || '-'}</td>
@@ -90,6 +110,8 @@ export function SubscriberList() {
                  </td>
               </tr>
             ))}
+
+
           </tbody>
         </table>
       </div>

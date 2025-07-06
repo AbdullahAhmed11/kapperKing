@@ -14,6 +14,7 @@ import { useClientStore } from '@/lib/store/clients'; // Import client store
 import { useServiceStore } from '@/lib/store/services'; // Import service store
 import { formatCurrency } from '@/lib/utils'; // Import currency formatter
 import { isSameDay } from 'date-fns'; // Import date-fns helper
+import axios from 'axios';
 
 export default function SalonDashboard() { // Renamed component
   const [date, setDate] = useState<Date>(new Date());
@@ -27,7 +28,9 @@ export default function SalonDashboard() { // Renamed component
   const { clients, fetchClients, loading: clientsLoading, error: clientError } = useClientStore();
   const { services, fetchServices, loading: servicesLoading, error: serviceError } = useServiceStore();
 
+
   // Fetch data when salon context or selected date changes
+ 
   // useEffect(() => {
   //   if (currentSalon?.id && !salonLoading && !salonError) {
   //     fetchAppointments(currentSalon.id, date);
@@ -78,33 +81,52 @@ export default function SalonDashboard() { // Renamed component
   //  if (!isLoading && !currentSalon) {
   //    return <div className="p-6 text-center text-gray-500">No active salon associated with this account.</div>;
   // }
-
+  type InfoData = {
+    todayAppointment?: number;
+    appointments?: number;
+    averageServiceTime?: number;
+    revenue?: number | string;
+    // Add other properties returned by your API as needed
+  };
+  const [infodata, setInfoData] = useState<InfoData | null>(null)
+  const getInfoData = async () => {
+    try{
+      const res = await axios.get(`https://kapperking.runasp.net/api/Salons/GetStatistics?id=1`)
+      setInfoData(res.data);
+    }catch(error) { 
+      console.log(error)
+    }
+  }
+  useEffect(() => {
+    getInfoData()
+  },[])
   return (
     <div className="space-y-6">
+
       {/* Stats Grid - Use dynamic data */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
          {/* Today's Appointments */}
          <div className="relative bg-white overflow-hidden rounded-lg border border-gray-100 p-5">
             <div className="flex justify-between"> <div className="bg-indigo-600 rounded-lg p-2"> <Calendar className="h-5 w-5 text-white" /> </div> </div>
-            <p className="mt-4 text-2xl font-semibold text-gray-900">{todaysAppointmentsCount}</p>
+            <p className="mt-4 text-2xl font-semibold text-gray-900">{infodata?.todayAppointment}</p>
             <p className="mt-1 text-sm text-gray-500">Today's Appointments</p>
          </div>
          {/* Active Clients */}
          <div className="relative bg-white overflow-hidden rounded-lg border border-gray-100 p-5">
             <div className="flex justify-between"> <div className="bg-indigo-600 rounded-lg p-2"> <Users className="h-5 w-5 text-white" /> </div> </div>
-            <p className="mt-4 text-2xl font-semibold text-gray-900">{activeClientsCount.toLocaleString()}</p>
+            <p className="mt-4 text-2xl font-semibold text-gray-900">{infodata?.appointments}</p>
             <p className="mt-1 text-sm text-gray-500">Active Clients</p>
          </div>
          {/* Average Service Time */}
          <div className="relative bg-white overflow-hidden rounded-lg border border-gray-100 p-5">
             <div className="flex justify-between"> <div className="bg-indigo-600 rounded-lg p-2"> <Clock className="h-5 w-5 text-white" /> </div> </div>
-            <p className="mt-4 text-2xl font-semibold text-gray-900">{averageServiceTime} min</p>
+            <p className="mt-4 text-2xl font-semibold text-gray-900">{infodata?.averageServiceTime} min</p>
             <p className="mt-1 text-sm text-gray-500">Average Service Time</p>
          </div>
          {/* Revenue (MTD) - Still Placeholder */}
          <div className="relative bg-white overflow-hidden rounded-lg border border-gray-100 p-5">
             <div className="flex justify-between"> <div className="bg-indigo-600 rounded-lg p-2"> <DollarSign className="h-5 w-5 text-white" /> </div> </div>
-            <p className="mt-4 text-2xl font-semibold text-gray-900">{revenueMTD}</p>
+            <p className="mt-4 text-2xl font-semibold text-gray-900">{infodata?.revenue}</p>
             <p className="mt-1 text-sm text-gray-500">Revenue (MTD)</p>
          </div>
       </div>
