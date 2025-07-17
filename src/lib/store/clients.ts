@@ -37,8 +37,7 @@ const token = Cookies.get('salonUser');
 
 const decoded = token ? jwtDecode<JwtPayload>(token)  : undefined;
 if (token) {
-  // const decoded = jwtDecode<JwtPayload>(token);
-  console.log('User ID:', decoded.Id);
+  console.log('User ID:', decoded?.Id);
 }
 export const useClientStore = create<ClientState>((set, get) => ({
   clients: [],
@@ -50,13 +49,14 @@ export const useClientStore = create<ClientState>((set, get) => ({
   fetchClients: async () => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch(`https://kapperking.runasp.net/api/Salons/GetCustomers?id=${decoded?.Id}`);
+      const response = await fetch(`https://kapperking.runasp.net/api/Owners/GetOwners`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const clients = await response.json();
+      console.log(clients, "clients")
       set({ clients });
     } catch (error: any) {
       toast.error(`Failed to fetch clients: ${error.message}`);
@@ -146,7 +146,7 @@ export const useClientStore = create<ClientState>((set, get) => ({
   deleteClient: async (clientId) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch(`https://kapperking.runasp.net/api/Owners/DeleteOwner/${clientId}`, {
+      const response = await fetch(`https://kapperking.runasp.net/api/Users/DeleteUser?id=${clientId}`, {
         method: 'DELETE',
       });
 

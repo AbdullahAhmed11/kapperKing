@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect} from 'react';
 import { Link } from 'react-router-dom';
 // import { Logo } from './Logo'; // Remove Logo component import
 import { useThemeStore } from '@/lib/theme';
@@ -7,7 +7,7 @@ import { Menu, X, Sparkles, Tag, Info, Mail } from 'lucide-react';
 
 function MarketingNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const logoUrl = useThemeStore((state) => state.currentTheme.logoUrl); // Get logoUrl from store
+  // const logoUrl = useThemeStore((state) => state.currentTheme.logoUrl); // Get logoUrl from store
 
   // Add icons to navigation data
   const navigation = [
@@ -17,6 +17,29 @@ function MarketingNavbar() {
     { name: 'Contact', href: '/contact', icon: Mail },
   ];
 
+
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+   useEffect(() => {
+    const fetchBranding = async () => {
+      try {
+        const res = await fetch('https://kapperking.runasp.net/api/SuperAdmin/GetBranding');
+        if (!res.ok) {
+          throw new Error(`HTTP error! Status: ${res.status}`);
+        }
+        const branding = await res.json();
+        console.log('Branding API response:', branding);
+        if (branding.logo) {
+          setLogoUrl(branding.logo);
+        }
+      } catch (err) {
+        console.error('Failed to fetch branding:', err);
+      }
+    };
+
+    fetchBranding();
+  }, []);
+
   return (
     <nav className="bg-white border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,8 +48,16 @@ function MarketingNavbar() {
           {/* Left side: Brand + Nav Links */}
           <div className="flex items-center">
             {/* Home/Brand Link with specific colors */}
-            <Link to="/" className="flex items-center text-xl font-bold font-heading hover:opacity-80 transition-opacity mr-10"> {/* Added margin-right */}
-              <span className="text-primary">Kapper</span><span className="text-gray-500">King</span>
+     
+             <Link to="/" className="flex items-center mr-10">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Brand logo" className="h-8 w-auto" />
+              ) : (
+                <span className="text-xl font-bold font-heading hover:opacity-80 transition-opacity">
+                  <span className="text-primary">Kapper</span>
+                  <span className="text-gray-500">King</span>
+                </span>
+              )}
             </Link>
             {/* Navigation Links */}
             <div className="hidden lg:flex lg:items-center lg:space-x-8">

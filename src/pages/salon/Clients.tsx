@@ -14,6 +14,7 @@ import { formatCurrency } from '@/lib/utils'; // Assuming utils exists
 import { EditClientDialog } from '@/components/clients/EditClientDialog';
 import { jwtDecode } from 'jwt-decode';
 import Cookies from 'js-cookie';
+import axios from 'axios';
 
 type JwtPayload = {
   Id: number; // adjust this to match your token's structure
@@ -34,6 +35,12 @@ function Clients() {
 
   
   const navigate = useNavigate(); // Initialize navigate
+    useEffect(() => {
+    if(!token) {
+              navigate('/login')
+
+    }
+  },[])
   const { currentSalon, loading: salonLoading, error: salonError } = useCurrentSalonStore();
   const { clients, loading, error, fetchClients, addClient, updateClient, deleteClient } = useClientStore();
 
@@ -41,14 +48,24 @@ function Clients() {
   const [showNewClient, setShowNewClient] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showEditClient, setShowEditClient] = useState(false);
-                                                                                  
+  const [salonClients, setSalonClients] = useState([]) 
+  
+  const fetchSalonClients = async () => {
+    try{
+      const res = await axios.get(`https://kapperking.runasp.net/api/Salons/GetCustomers?id=${decoded?.Id}`)
+      setSalonClients(res.data)
+    }catch(error) {
+      console.log(error)
+    }
+  }
   // Fetch clients when salon ID is available
   useEffect(() => {
     fetchClients()
+    fetchSalonClients()
     // if (currentSalon?.id && !salonLoading && !salonError) {
     //   fetchClients(currentSalon.id);
     // }
-  }, [fetchClients]);
+  }, []);
 
 const handleEditClick = (client: Client, e: React.MouseEvent) => {
   e.stopPropagation();
@@ -123,7 +140,7 @@ if ((data as any).password) formData.append('Password', (data as any).password);
     navigate('/salon/appointments', { state: { preselectedClientId: client.id } });
   };
 
-  const filteredClients = clients.filter(c =>
+  const filteredClients = salonClients.filter(c =>
      `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
      c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
      c.phone?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -208,7 +225,7 @@ const handleEditSuccess = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2 flex-shrink-0">
-                        <Button variant="outline" size="sm" onClick={() => handleBookAppointment(client)}> <Calendar className="h-4 w-4" /> </Button>
+                        {/* <Button variant="outline" size="sm" onClick={() => handleBookAppointment(client)}> <Calendar className="h-4 w-4" /> </Button> */}
                         <Button variant="outline" size="sm" onClick={(e) => handleEditClick(client, e)}> <Edit2 className="h-4 w-4" /> </Button>
                         <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" onClick={(e) => handleDeleteClick(client, e)}> <Trash2 className="h-4 w-4" /> </Button>
                       </div>

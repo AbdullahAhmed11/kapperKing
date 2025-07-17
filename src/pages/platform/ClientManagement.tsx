@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; 
+import React, { useState,useEffect } from 'react'; 
 import { Plus, Search, Edit2, Trash2, Store, Users, Calendar, Settings, CreditCard } from 'lucide-react'; 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,26 @@ import { useSalonStore, selectAllSalons, Salon, AddSalonPayload } from '@/lib/st
 import { useSubscriptionPlanStore, selectAllPlans } from '@/lib/store/subscriptionPlans'; 
 import { toast } from 'sonner'; 
 import { useThemeStore } from '@/lib/theme'; // Import theme store for button color
-
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+interface MyJwtPayload {
+      Id?: string;
+      Role?: string;
+      [key: string]: any;
+    }
 function ClientManagement() {
+      const navigate = useNavigate()
+      const token = Cookies.get('salonUser');
+      const decoded: MyJwtPayload | undefined = token ? jwtDecode<MyJwtPayload>(token) : undefined;
+  
+      useEffect(() => {
+        if (!decoded?.Id || (decoded?.Role !== "SuperAdmin" && decoded?.Role !== "Admin")) {
+          navigate('/login')
+        }
+      },[])
+
   const [showNewClient, setShowNewClient] = useState(false);
   const [showEditClient, setShowEditClient] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null); 
@@ -31,6 +49,16 @@ function ClientManagement() {
 
   const plans = useSubscriptionPlanStore(selectAllPlans);
   const { dashboardButtonTextColor } = useThemeStore((state) => state.currentTheme); // Get text color
+
+const getOwners = async () => {
+  try{
+
+    const res = await axios.get(`https://kapperking.runasp.net/api/Owners/GetOwners`)
+    console.log(res.data, 'ff')
+  }catch (error) {
+    console.log(error)
+  }
+}
 
   // Combined action to add client and their first salon
   const addClientAndFirstSalon = (formData: AddClientFormData) => {
@@ -89,19 +117,56 @@ function ClientManagement() {
     }
   };
 
-  const handleDeleteClient = async (clientId: string) => {
-    const clientSalons = salons.filter(s => s.clientId === clientId);
-    if (window.confirm(`Are you sure you want to delete this client and their ${clientSalons.length} associated salon(s)? This cannot be undone.`)) { 
-      if (clientSalons.length > 0) {
-         console.warn(`Deleting ${clientSalons.length} associated salons not implemented yet.`);
-         toast.info("Deleting associated salons is not yet implemented.");
-         // In real app: await Promise.all(clientSalons.map(s => deleteSalon(s.id)));
-      }
-      deleteClient(clientId); 
-    }
-  };
+  // const handleDeleteClient = async (clientId: string) => {
+  //   const clientSalons = salons.filter(s => s.clientId === clientId);
+  //   if (window.confirm(`Are you sure you want to delete this client and their ${clientSalons.length} associated salon(s)? This cannot be undone.`)) { 
+  //     if (clientSalons.length > 0) {
+  //        console.warn(`Deleting ${clientSalons.length} associated salons not implemented yet.`);
+  //        toast.info("Deleting associated salons is not yet implemented.");
+  //        // In real app: await Promise.all(clientSalons.map(s => deleteSalon(s.id)));
+  //     }
+  //     deleteClient(clientId); 
+  //   }
+  // };
 
   // Handle adding a new salon to an *existing* client
+ const handleDeleteClient = async (clientId: string) => {
+  const clientSalons = salons.filter(s => s.clientId === clientId);
+  
+  if (window.confirm(`Are you sure you want to delete this client and their ${clientSalons.length} associated salon(s)? This cannot be undone.`)) {
+    try {
+      // Make API call to delete the client
+      const response = await fetch(`https://kapperking.runasp.net/api/Users/DeleteUser?id=${clientId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          // Add authorization header if needed
+          // 'Authorization': `Bearer ${yourAuthToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete client');
+      }
+
+      // If API call succeeds, update local state
+      // deleteClient(clientId);
+      await getOwners()
+      toast.success("Client deleted successfully!");
+      // Optionally handle associated salons
+      if (clientSalons.length > 0) {
+        console.warn(`Client deleted but ${clientSalons.length} associated salons remain.`);
+        toast.info("Client deleted, but associated salons remain.");
+      }
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      toast.error("Failed to delete client. Please try again.");
+    }
+  }
+};
+ 
+ 
+ 
   const handleAddSalonSubmit = async (data: SalonSubmitData) => { 
     if (!clientToAddSalonTo) return; // Should not happen, but good practice
 
@@ -226,7 +291,7 @@ function ClientManagement() {
                   </div>
                 </div>
                 <div className="flex space-x-1 flex-shrink-0"> 
-                   <Button
+                   {/* <Button
                      variant="outline"
                      size="sm"
                      title="Add Salon"
@@ -251,7 +316,7 @@ function ClientManagement() {
                     }}
                   >
                     <Edit2 className="h-4 w-4" />
-                  </Button>
+                  </Button> */}
                   <Button
                     variant="outline"
                     size="sm"
@@ -270,7 +335,7 @@ function ClientManagement() {
               </div>
 
               <div className="mt-3 pt-3 border-t border-gray-100"> 
-                <h4 className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">Managed Salons ({clientSalons.length})</h4>
+                <h4 className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">Managed Salons ({client.salons})</h4>
                 <div className="flex flex-wrap gap-1">
                    {clientSalons.map((salon) => (
                       <span
@@ -280,7 +345,7 @@ function ClientManagement() {
                         {salon.name}
                       </span>
                    ))}
-                    {clientSalons.length === 0 && (
+                    {client.salons === 0 && (
                        <span className="text-xs text-gray-400 italic">No salons assigned</span>
                     )}
                 </div>
@@ -290,7 +355,7 @@ function ClientManagement() {
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center text-gray-500">
                     <CreditCard className="h-4 w-4 mr-1.5" /> 
-                    <span>{plan?.name || 'No Plan'}</span> 
+                    <span>{client?.planName || 'No Plan'}</span> 
                   </div>
                   <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                     subscriptionStatus === 'active' || subscriptionStatus === 'trialing' ? 'bg-green-100 text-green-800' : 

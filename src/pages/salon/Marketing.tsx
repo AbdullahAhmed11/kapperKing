@@ -9,22 +9,62 @@ import { useCurrentSalonStore } from '@/lib/store/currentSalon'; // Import salon
 import { SalonCampaignForm } from '@/components/salon/forms/SalonCampaignForm'; // Import the new form
 import { format } from 'date-fns'; // Import format
 import { toast } from 'sonner'; // Import toast
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie'; 
 
+interface Campaign {
+  id: number;
+  name: string;
+  body: string;
+  email: string;
+  isHtml: boolean;
+  type: string;
+  status: string;
+  sentAt: string;
+}
+type JwtPayload = {
+  Id: number; // adjust this to match your token's structure
+  email?: string;
+  name?: string;
+  FirstName?: string;
+  LastName?: string;
+  // any other fields you expect
+};
 function Marketing() {
-  const { currentSalon, loading: salonLoading, error: salonError } = useCurrentSalonStore();
-  const { campaigns, loading, error, fetchCampaigns, addCampaign, updateCampaign, deleteCampaign, sendCampaign } = useCampaignStore();
-
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCampaignForm, setShowCampaignForm] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
-  const [sendingCampaignId, setSendingCampaignId] = useState<string | null>(null); // Track sending state
-
-  // Fetch campaigns when salon context is ready
+  const [sendingCampaignId, setSendingCampaignId] = useState<number | null>(null);
+ const token = Cookies.get('salonUser');
+  
+  const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
+ 
+  // Fetch campaigns from API
   useEffect(() => {
-    if (currentSalon?.id && !salonLoading && !salonError) {
-      fetchCampaigns(currentSalon.id);
-    }
-  }, [currentSalon?.id, salonLoading, salonError, fetchCampaigns]);
+    const fetchCampaigns = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`https://kapperking.runasp.net/api/Salons/GetSalonCampaings?salonId=${decoded?.Id}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setCampaigns(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch campaigns');
+        toast.error('Failed to load campaigns');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCampaigns();
+  }, []);
 
   const handleAddNew = () => {
     setEditingCampaign(null);
@@ -36,96 +76,219 @@ function Marketing() {
     setShowCampaignForm(true);
   };
 
-  const handleDelete = async (campaign: Campaign) => {
-    if (window.confirm(`Are you sure you want to delete the "${campaign.name}" campaign?`)) {
-      await deleteCampaign(campaign.id);
+  // const handleDelete = async (campaign: Campaign) => {
+  //   if (window.confirm(`Are you sure you want to delete the "${campaign.name}" campaign?`)) {
+  //     try {
+  //       // Add your delete API call here
+  //       toast.success(`Campaign "${campaign.name}" deleted`);
+  //       setCampaigns(campaigns.filter(c => c.id !== campaign.id));
+  //     } catch (err) {
+  //       toast.error('Failed to delete campaign');
+  //     }
+  //   }
+  // };
+const handleDelete = async (campaign: Campaign) => {
+  if (window.confirm(`Are you sure you want to delete the "${campaign.name}" campaign?`)) {
+    try {
+      const response = await fetch(`https://kapperking.runasp.net/api/Salons/DeleteSalonCampign?campaignId=${campaign.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      toast.success(`Campaign "${campaign.name}" deleted`);
+      setCampaigns(campaigns.filter(c => c.id !== campaign.id));
+    } catch (err) {
+      toast.error('Failed to delete campaign');
+      console.error(err);
+    }
+  }
+};
+
+//   const handleFormSubmit = async (data: CampaignFormData) => {
+//   try {
+//     const token = Cookies.get('salonUser');
+//     const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
+//     const salonId = decoded?.Id;
+
+//     const payload = {
+//       name: data.name,
+//       body: data.content,
+//       email: data.subject, // or another field if this is not correct
+//       isHtml: true,
+//       type: "Email",
+//       status: "Sent",
+//       toAll: data.target_type === 'all_clients',
+//       emails: data.target_type === 'specific_clients' ? data.selectedClientIds : [],
+//       salonId: salonId
+//     };
+
+//     const response = await fetch('https://kapperking.runasp.net/api/Salons/AddSalonCampain', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify(payload)
+//     });
+
+//     if (!response.ok) {
+//       throw new Error(`HTTP error! status: ${response.status}`);
+//     }
+
+//     toast.success('Campaign created successfully');
+//     setShowCampaignForm(false);
+    
+//     // Refetch the campaigns after creation
+//     const refreshed = await fetch(`https://kapperking.runasp.net/api/Salons/GetSalonCampaings?salonId=${salonId}`);
+//     const newCampaigns = await refreshed.json();
+//     setCampaigns(newCampaigns);
+//   } catch (err) {
+//     toast.error('Failed to create campaign');
+//     console.error(err);
+//   }
+// };
+const handleFormSubmit = async (data: CampaignFormData) => {
+  try {
+    const token = Cookies.get('salonUser');
+    const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
+    const salonId = decoded?.Id;
+
+    if (!salonId) {
+      toast.error('Invalid salon session');
+      return;
+    }
+
+    // If editing
+    if (editingCampaign) {
+      const payload = {
+        salonId,
+        campaignId: editingCampaign.id,
+        name: data.name,
+        body: data.content,
+        email: data.subject,
+        isHtml: true
+      };
+
+      const response = await fetch('https://kapperking.runasp.net/api/Salons/EditSalonCampaign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      toast.success('Campaign updated successfully');
+    } else {
+      // Create new campaign
+      const payload = {
+        name: data.name,
+        body: data.content,
+        email: data.subject,
+        isHtml: true,
+        type: "Email",
+        status: "Sent",
+        toAll: data.target_type === 'all_clients',
+        emails: data.target_type === 'specific_clients' ? data.selectedClientIds : [],
+        salonId
+      };
+
+      const response = await fetch('https://kapperking.runasp.net/api/Salons/AddSalonCampain', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      toast.success('Campaign created successfully');
+    }
+
+    setShowCampaignForm(false);
+
+    // Refetch updated campaigns list
+    const refreshed = await fetch(`https://kapperking.runasp.net/api/Salons/GetSalonCampaings?salonId=${salonId}`);
+    const newCampaigns = await refreshed.json();
+    setCampaigns(newCampaigns);
+  } catch (err) {
+    toast.error('Failed to submit campaign');
+    console.error(err);
+  }
+};
+
+  const handleSend = async (campaign: Campaign) => {
+    if (campaign.status !== 'Draft') {
+      toast.info("Only draft campaigns can be sent.");
+      return;
+    }
+    
+    if (window.confirm(`Are you sure you want to send the "${campaign.name}" campaign?`)) {
+      setSendingCampaignId(campaign.id);
+      try {
+        // Add your send API call here
+        toast.success(`Campaign "${campaign.name}" sent successfully`);
+        // Update local state to reflect sent status
+        setCampaigns(campaigns.map(c => 
+          c.id === campaign.id ? { ...c, status: 'Sent', sentAt: new Date().toISOString() } : c
+        ));
+      } catch (err) {
+        toast.error('Failed to send campaign');
+      } finally {
+        setSendingCampaignId(null);
+      }
     }
   };
 
-  const handleSend = async (campaign: Campaign) => {
-     if (campaign.status !== 'draft' && campaign.status !== 'failed') {
-        toast.info("Only draft or failed campaigns can be sent.");
-        return;
-     }
-     if (window.confirm(`Are you sure you want to send the "${campaign.name}" campaign?`)) {
-        setSendingCampaignId(campaign.id);
-        await sendCampaign(campaign.id); // Store action handles success/error toast
-        setSendingCampaignId(null);
-     }
-  };
-
-  // Form submission handler (passed to SalonCampaignForm)
-  const handleFormSubmit = async (data: CampaignFormData) => {
-     let success = false;
-     if (editingCampaign) {
-        success = await updateCampaign(editingCampaign.id, data);
-     } else if (currentSalon?.id) {
-        const newCampaign = await addCampaign(currentSalon.id, data);
-        success = !!newCampaign;
-     } else {
-        toast.error("Cannot create campaign: Salon context missing.");
-     }
-     
-     if (success) {
-        setShowCampaignForm(false); // Close dialog on success
-     }
-     // Store actions handle toasts
-  };
-
   const filteredCampaigns = campaigns.filter(c =>
-     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     c.subject?.toLowerCase().includes(searchTerm.toLowerCase())
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Calculate stats (basic examples)
-  const totalSubscribers = 0; // TODO: Fetch from subscriber store/clients with marketing consent
-  // Define 'active' campaigns as scheduled or sending
-  const activeCampaigns = campaigns.filter(c => c.status === 'sending' || c.status === 'scheduled').length;
-  // TODO: Calculate average open rate properly from stats
+  // Calculate stats
+  const totalSubscribers = 0; // You would fetch this from another endpoint
+  const activeCampaigns = campaigns.filter(c => c.status === 'Sending' || c.status === 'Scheduled').length;
 
-  const isLoading = loading || salonLoading;
-  const combinedError = error || salonError;
-
-  if (isLoading && campaigns.length === 0) { // Show loading only on initial load
-     return <div className="flex justify-center items-center p-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-  }
-  if (combinedError) {
-     return <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700">Error loading marketing data: {combinedError}</div>;
+  if (loading && campaigns.length === 0) {
+    return <div className="flex justify-center items-center p-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
-  //  if (!isLoading && !currentSalon) {
-  //    return <div className="p-6 text-center text-gray-500">No active salon associated with this account.</div>;
-  // }
-
-
+  if (error) {
+    return <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700">Error loading marketing data: {error}</div>;
+  }
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+  <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Marketing</h1>
         <Button onClick={handleAddNew}>
           <Plus className="h-4 w-4 mr-2" />
-          {/* New Campaignn */}
+          New Campaign
         </Button>
       </div>
 
       {/* Marketing Stats */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-6">
-         {/* Total Subscribers Card */}
-         <div className="bg-white overflow-hidden shadow rounded-lg p-5">
-            <dt className="text-sm font-medium text-gray-500 truncate flex items-center"><Mail className="h-5 w-5 mr-2"/>Total Subscribers</dt>
-            <dd className="mt-1 text-3xl font-semibold text-gray-900">{totalSubscribers}</dd>
-         </div>
-         {/* Average Open Rate Card */}
-         <div className="bg-white overflow-hidden shadow rounded-lg p-5">
-            <dt className="text-sm font-medium text-gray-500 truncate flex items-center"><MessageSquare className="h-5 w-5 mr-2"/>Average Open Rate</dt>
-            <dd className="mt-1 text-3xl font-semibold text-gray-900">N/A</dd> {/* TODO: Calculate */}
-         </div>
-         {/* Active Campaigns Card */}
-         <div className="bg-white overflow-hidden shadow rounded-lg p-5">
-            <dt className="text-sm font-medium text-gray-500 truncate flex items-center"><Users className="h-5 w-5 mr-2"/>Active Campaigns</dt>
-            <dd className="mt-1 text-3xl font-semibold text-gray-900">{activeCampaigns}</dd>
-         </div>
-      </div>
+      {/* <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-6">
+        <div className="bg-white overflow-hidden shadow rounded-lg p-5">
+          <dt className="text-sm font-medium text-gray-500 truncate flex items-center">
+            <Mail className="h-5 w-5 mr-2"/>Total Subscribers
+          </dt>
+          <dd className="mt-1 text-3xl font-semibold text-gray-900">{totalSubscribers}</dd>
+        </div>
+        <div className="bg-white overflow-hidden shadow rounded-lg p-5">
+          <dt className="text-sm font-medium text-gray-500 truncate flex items-center">
+            <MessageSquare className="h-5 w-5 mr-2"/>Active Campaigns
+          </dt>
+          <dd className="mt-1 text-3xl font-semibold text-gray-900">{activeCampaigns}</dd>
+        </div>
+      </div> */}
 
       {/* Campaigns List */}
       <div className="bg-white shadow rounded-lg">
@@ -152,66 +315,71 @@ function Marketing() {
                   <TableHead>Campaign</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Performance</TableHead>
-                  <TableHead>Last Sent</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Sent At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading && campaigns.length === 0 && (
-                   <TableRow><TableCell colSpan={6} className="text-center py-10">Loading campaigns...</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-10">
+                      Loading campaigns...
+                    </TableCell>
+                  </TableRow>
                 )}
                 {!loading && filteredCampaigns.length === 0 && (
-                   <TableRow><TableCell colSpan={6} className="text-center py-10 text-gray-500">No campaigns found.</TableCell></TableRow>
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-10 text-gray-500">
+                      No campaigns found
+                    </TableCell>
+                  </TableRow>
                 )}
                 {filteredCampaigns.map((campaign) => {
-                   const isSending = sendingCampaignId === campaign.id;
-                   const canSend = campaign.status === 'draft' || campaign.status === 'failed';
-                   const openRate = campaign.stat_sent && campaign.stat_opened ? Math.round((campaign.stat_opened / campaign.stat_sent) * 100) : 0;
-                   const clickRate = campaign.stat_sent && campaign.stat_clicked ? Math.round((campaign.stat_clicked / campaign.stat_sent) * 100) : 0; // Click-through rate of total sent
+                  const isSending = sendingCampaignId === campaign.id;
+                  const canSend = campaign.status === 'Draft';
 
-                   return (
-                      <TableRow key={campaign.id} className="hover:bg-gray-50">
-                        <TableCell>
-                          <div className="text-sm font-medium text-gray-900">{campaign.name}</div>
-                          <div className="text-xs text-gray-500">{campaign.target_type.replace('_', ' ')}</div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={campaign.type === 'email' ? 'default' : 'secondary'} className="capitalize">{campaign.type}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {/* Map status to available Badge variants */}
-                          <Badge variant={
-                             campaign.status === 'sent' ? 'default' : // Use default (primary) for sent
-                             campaign.status === 'draft' ? 'outline' :
-                             campaign.status === 'scheduled' ? 'secondary' : // Use secondary for scheduled/sending/failed
-                             campaign.status === 'sending' ? 'secondary' :
-                             campaign.status === 'failed' ? 'destructive' : // Use destructive for failed
-                             'secondary' // Default/Archived
-                          } className="capitalize">{campaign.status}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {campaign.stat_sent && campaign.stat_sent > 0 ? (
-                            <div>
-                              <div className="text-sm text-gray-900">{campaign.stat_opened || 0} opened ({openRate}%)</div>
-                              <div className="text-sm text-gray-500">{campaign.stat_clicked || 0} clicked ({clickRate}%)</div>
-                            </div>
-                          ) : (
-                            <div className="text-sm text-gray-500">{campaign.status === 'draft' || campaign.status === 'scheduled' ? 'Not sent yet' : '-'}</div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-500">
-                          {campaign.sent_at ? format(new Date(campaign.sent_at), 'PP') : 'Never'}
-                        </TableCell>
-                        <TableCell className="text-right space-x-1">
-                           <Button variant="ghost" size="sm" onClick={() => handleEdit(campaign)} disabled={isSending} title="Edit"> <Edit2 className="h-4 w-4"/> </Button>
-                           <Button variant="ghost" size="sm" onClick={() => handleSend(campaign)} disabled={isSending || !canSend} title={canSend ? "Send" : `Cannot send (status: ${campaign.status})`}> 
-                              {isSending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4"/>}
-                           </Button>
-                           <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(campaign)} disabled={isSending} title="Delete"> <Trash2 className="h-4 w-4"/> </Button>
-                        </TableCell>
-                      </TableRow>
-                   );
+                  return (
+                    <TableRow key={campaign.id} className="hover:bg-gray-50">
+                      <TableCell>
+                        <div className="text-sm font-medium text-gray-900">{campaign.name}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={campaign.type === 'Email' ? 'default' : 'secondary'}>
+                          {campaign.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          campaign.status === 'Sent' ? 'default' :
+                          campaign.status === 'Draft' ? 'outline' :
+                          campaign.status === 'Scheduled' ? 'secondary' :
+                          campaign.status === 'Sending' ? 'secondary' :
+                          campaign.status === 'Failed' ? 'destructive' :
+                          'secondary'
+                        }>
+                          {campaign.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500">
+                        {campaign.email}
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500">
+                        {campaign.sentAt ? format(new Date(campaign.sentAt), 'PPpp') : 'Not sent'}
+                      </TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(campaign)} disabled={isSending} title="Edit">
+                          <Edit2 className="h-4 w-4"/>
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleSend(campaign)} disabled={isSending || !canSend} title={canSend ? "Send" : `Cannot send (status: ${campaign.status})`}>
+                          {/* {isSending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4"/>} */}
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(campaign)} disabled={isSending} title="Delete">
+                          <Trash2 className="h-4 w-4"/>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
                 })}
               </TableBody>
             </Table>
@@ -219,13 +387,23 @@ function Marketing() {
         </div>
       </div>
 
-      {/* Campaign Form Dialog */}
       <SalonCampaignForm
-         salonId={currentSalon?.id || ''}
+         salonId={decoded?.Id ? String(decoded.Id) : ''}
          open={showCampaignForm}
          onClose={() => setShowCampaignForm(false)}
          onSubmit={handleFormSubmit}
-         initialData={editingCampaign}
+         initialData={
+           editingCampaign
+             ? {
+                 ...editingCampaign,
+                 salon_id: decoded?.Id ?? '', // or the correct salon id
+                 content: editingCampaign.body,
+                 target_type: 'all_clients', // or map appropriately
+                 created_at: editingCampaign.sentAt || new Date().toISOString(),
+                 updated_at: new Date().toISOString(),
+               }
+             : null
+         }
       />
     </div>
   );

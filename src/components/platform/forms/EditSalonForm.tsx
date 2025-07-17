@@ -117,6 +117,7 @@ const EditSalonForm = ({ open, onClose, salonId, onSuccess }: EditSalonFormProps
         
         setOwners(ownersData || []);
         setPlans(plansData || []);
+        console.log(plansData, "plansData")
       } catch (error) {
         console.error('Error fetching data:', error);
       }

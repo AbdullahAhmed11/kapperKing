@@ -51,7 +51,7 @@ export function SalonCampaignForm({ salonId, open, onClose, onSubmit, initialDat
   // Fetch clients when the form mounts or salonId changes
   useEffect(() => {
      if (salonId && open) { // Fetch only when dialog is open and salonId is available
-        fetchClients(salonId);
+        fetchClients();
      }
   }, [salonId, open, fetchClients]);
 
@@ -61,20 +61,15 @@ export function SalonCampaignForm({ salonId, open, onClose, onSubmit, initialDat
   // Reset form when initialData changes or dialog opens/closes
   useEffect(() => {
     if (open) {
-       if (initialData) {
-         // Ensure target_type from initialData is valid for the form schema
-         const formTargetType = (initialData.target_type === 'all_clients' || initialData.target_type === 'specific_clients')
-                               ? initialData.target_type
-                               : 'all_clients'; // Default if invalid
-         reset({
-           name: initialData.name,
-           subject: initialData.subject || '',
-           content: initialData.content,
-           target_type: formTargetType,
-           // TODO: Need logic to map DB targeting criteria back to selectedClientIds if editing 'specific_clients'
-           selectedClientIds: [], // Reset selection on edit for now
-         });
-       } else {
+      if (initialData) {
+  reset({
+    name: initialData.name,
+    subject: initialData.subject || '',
+    content: initialData.content,
+    target_type: 'all_clients', // You can store target_type if needed
+    selectedClientIds: [], // Optional for advanced use
+  });
+} else {
          reset({ name: '', subject: '', content: '', target_type: 'all_clients', selectedClientIds: [] });
        }
     }

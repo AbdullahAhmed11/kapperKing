@@ -739,8 +739,13 @@ export function AppointmentForm({onSuccess}: any) {
         throw new Error('Failed to create appointment');
       }
     } catch (error) {
+       if (axios.isAxiosError(error)) {
+              toast.error(error.response?.data);
+            } else {
+              toast.error('Error adding stylist');
+            }
       console.error('Error creating appointment:', error);
-      toast.error('Failed to create appointment. Please try again.');
+      // toast.error('Failed to create appointment. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

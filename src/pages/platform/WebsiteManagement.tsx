@@ -6,8 +6,26 @@ import { toast } from 'sonner';
 import { PageForm } from '@/components/platform/forms/PageForm';
 import { usePageStore, PageData, FullPageData } from '@/lib/pageStore';
 import { useThemeStore } from '@/lib/theme'; // Import theme store
-
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
+interface MyJwtPayload {
+      Id?: string;
+      Role?: string;
+      [key: string]: any;
+    }
 function WebsiteManagement() { // Correct component name
+
+      const navigate = useNavigate()
+      const token = Cookies.get('salonUser');
+      const decoded: MyJwtPayload | undefined = token ? jwtDecode<MyJwtPayload>(token) : undefined;
+  
+      useEffect(() => {
+        if (!decoded?.Id || (decoded?.Role !== "SuperAdmin" && decoded?.Role !== "Admin")) {
+          navigate('/login')
+        }
+      },[])
+      
   const [showNewPage, setShowNewPage] = useState(false);
   const [showEditPage, setShowEditPage] = useState(false);
   const [selectedPageData, setSelectedPageData] = useState<FullPageData | null>(null); // Store full data for editing

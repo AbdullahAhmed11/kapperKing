@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-
+import axios from "axios"
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
@@ -25,39 +25,72 @@ export default function CustomerSignUpPage() {
   const parts = location.pathname.split('/');
   const basePath = `/${parts[1]}/${parts[2]}/${parts[3]}/`;
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  // const handleSignUp = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setLoading(true);
 
-    const formData = new FormData();
-    formData.append('FirstName', firstName);
-    formData.append('LastName', lastName);
-    formData.append('Email', email);
-    formData.append('Password', password);
-    formData.append('Phone', phone);
-    if (image) formData.append('Image', image);
+  //   const formData = new FormData();
+  //   formData.append('FirstName', firstName);
+  //   formData.append('LastName', lastName);
+  //   formData.append('Email', email);
+  //   formData.append('Password', password);
+  //   formData.append('Phone', phone);
+  //   if (image) formData.append('Image', image);
 
-    try {
-      const response = await fetch('https://kapperking.runasp.net/api/Users/AddCustomer', {
-        method: 'POST',
-        body: formData,
-      });
+  //   try {
+  //     const response = await fetch('https://kapperking.runasp.net/api/Users/AddCustomer', {
+  //       method: 'POST',
+  //       body: formData,
+  //     });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Signup failed');
+  //     if (!response.ok) {
+  //       const errorText = await response.text();
+  //       throw new Error(errorText || 'Signup failed');
+  //     }
+
+  //     toast.success('Sign up successful!');
+  //     // navigate(query.get('redirect') || '/c/profile');
+  //     navigate(`${basePath}login`)
+  //   } catch (error: any) {
+  //     // toast.error(`Sign up failed: ${error.message}`);
+  //     toast.error(error.response?.data);
+  //      console.log(error) 
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+const handleSignUp = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+
+  const formData = new FormData();
+  formData.append('FirstName', firstName);
+  formData.append('LastName', lastName);
+  formData.append('Email', email);
+  formData.append('Password', password);
+  formData.append('Phone', phone);
+  if (image) formData.append('Image', image);
+
+  try {
+    const response = await axios.post(
+      'https://kapperking.runasp.net/api/Users/AddCustomer',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       }
+    );
 
-      toast.success('Sign up successful!');
-      // navigate(query.get('redirect') || '/c/profile');
-      navigate(`${basePath}login`)
-    } catch (error: any) {
-      toast.error(`Sign up failed: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+    toast.success('Sign up successful!');
+    navigate(`${basePath}login`);
+  } catch (error: any) {
+    toast.error(error.response?.data || error.message);
+    console.log(error);
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-lg shadow-md">
@@ -66,6 +99,7 @@ export default function CustomerSignUpPage() {
             Create Customer Account
           </h2>
         </div>
+
         <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -109,6 +143,9 @@ export default function CustomerSignUpPage() {
             </Button>
           </div>
         </form>
+
+
+        
         <div className="text-sm text-center">
           Already have an account?{' '}
           <Link to={`${basePath}login`} className="font-medium text-indigo-600 hover:text-indigo-500">

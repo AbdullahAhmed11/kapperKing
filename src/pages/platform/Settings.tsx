@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,7 +10,15 @@ import { usePlatformSettingsStore, selectPlatformSettings, PlatformSettingsData 
 import { Settings as SettingsIcon, Mail, Shield, Link as LinkIcon, Facebook, Twitter, Instagram, Linkedin, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Import Card components
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Import Tabs components
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
 
+interface MyJwtPayload {
+      Id?: string;
+      Role?: string;
+      [key: string]: any;
+    }
 // Schema remains the same (includes all fields)
 const platformSettingsSchema = z.object({
   platformName: z.string().min(2, 'Platform name must be at least 2 characters'),
@@ -47,6 +55,16 @@ const platformSettingsSchema = z.object({
 type PlatformSettingsFormData = PlatformSettingsData;
 
 export default function PlatformSettings() {
+
+      const navigate = useNavigate()
+    const token = Cookies.get('salonUser');
+    const decoded: MyJwtPayload | undefined = token ? jwtDecode<MyJwtPayload>(token) : undefined;
+
+    useEffect(() => {
+      if (!decoded?.Id || (decoded?.Role !== "SuperAdmin" && decoded?.Role !== "Admin")) {
+        navigate('/login')
+      }
+    },[])
   const settings = usePlatformSettingsStore(selectPlatformSettings);
   const updateSettings = usePlatformSettingsStore((state) => state.updateSettings);
 

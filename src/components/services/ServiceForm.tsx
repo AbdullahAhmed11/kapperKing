@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-// Removed duplicate Dialog import below
 
 const serviceSchema = z.object({
   name: z.string().min(1, 'Service name is required'),
@@ -26,20 +25,46 @@ interface ServiceFormProps {
   title?: string;
 }
 
+interface Category {
+  id: number;
+  name: string;
+}
+
 export function ServiceForm({ open, onClose, onSubmit, initialData, title = 'Add Service' }: ServiceFormProps) {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
     defaultValues: initialData,
   });
 
-  const categories = [
-    'Haircuts',
-    'Color',
-    'Styling',
-    'Treatments',
-    'Extensions',
-    'Other'
-  ];
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        setError(null);
+        const response = await fetch('https://kapperking.runasp.net/api/Categories/GetCategories');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch categories');
+        }
+        
+        const data = await response.json();
+        setCategories(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        console.error('Error fetching categories:', err);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    if (open) {
+      fetchCategories();
+    }
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -63,20 +88,29 @@ export function ServiceForm({ open, onClose, onSubmit, initialData, title = 'Add
 
           <div>
             <Label htmlFor="category">Category</Label>
-            <select
-              id="category"
-              {...register('category')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            >
-              <option value="">Select a category</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-            {errors.category && (
-              <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>
+            {loadingCategories ? (
+              <div className="mt-1 animate-pulse">Loading categories...</div>
+            ) : error ? (
+              <div className="mt-1 text-sm text-red-600">{error}</div>
+            ) : (
+              <>
+                <select
+                  id="category"
+                  {...register('category')}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  disabled={loadingCategories}
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.category && (
+                  <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>
+                )}
+              </>
             )}
           </div>
 
@@ -123,7 +157,7 @@ export function ServiceForm({ open, onClose, onSubmit, initialData, title = 'Add
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || loadingCategories}>
               {isSubmitting ? 'Saving...' : 'Save Service'}
             </Button>
           </div>

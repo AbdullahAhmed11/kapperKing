@@ -37,12 +37,12 @@ function MarketingFooter() {
           {/* Logo & Social Links Column */}
           <div className="space-y-6 xl:col-span-1"> {/* Added space-y-6 */}
              {/* Large Logo */}
-             <img
+             {/* <img
                src={logoUrl || '/logos/marketing-logo.png'} // Assumes this URL points to the logo with text included
                alt="KapperKing Logo"
                className="h-[15rem] w-auto mx-auto xl:mx-0" // Ensure logo is large, center on small screens, left-align on xl
                onError={(e) => (e.currentTarget.src = '/logos/marketing-logo.png')}
-             />
+             /> */}
              {/* Tagline Removed */}
              {/* Center social links below logo */}
             <div className="mt-8 flex justify-center space-x-5 xl:justify-start"> {/* Center on small, left-align on xl */}

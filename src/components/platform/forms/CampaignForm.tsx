@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Campaign, CampaignFormData } from '@/lib/store/campaigns'; // Import types
 import { useSubscriberStore, selectAllSubscribers, Subscriber } from '@/lib/store/subscribers'; // Import subscriber store
 // import { Checkbox } from '@/components/ui/checkbox'; // No Checkbox component found
-
+import axios from 'axios';
 // Schema for the form data, including targeting
 const campaignSchema = z.object({
   name: z.string().min(2, 'Campaign name is required'),
@@ -34,6 +34,7 @@ interface CampaignFormProps {
 
 export function CampaignForm({ open, onClose, onSubmit, initialData }: CampaignFormProps) {
   const allSubscribers = useSubscriberStore(selectAllSubscribers); // Get all subscribers for selection
+    const [allsubscribers, setAllSubscripers] = useState<any[]>([]); // Local state for subscribers
   
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset, watch, setValue } = useForm<CampaignFormSchemaData>({
     resolver: zodResolver(campaignSchema),
@@ -71,7 +72,20 @@ export function CampaignForm({ open, onClose, onSubmit, initialData }: CampaignF
     // The onSubmit prop expects CampaignFormData (which matches schema now)
     await onSubmit(formData); 
   };
+  const getAllSubscribers = async () => {
+    try { 
+      const res = await axios.get('https://kapperking.runasp.net/api/SuperAdmin/GetSubscribers');
+      const data = res.data || [];
+      console.log('Fetched subscribers:', data); // Debugging line
+      setAllSubscripers(data);
+    } catch (error) {
+      console.error('Failed to fetch subscribers:', error);
+    }
+  };
 
+  useEffect(() => { 
+    getAllSubscribers();
+  }, []);
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[700px]"> {/* Wider modal */}
@@ -104,7 +118,7 @@ export function CampaignForm({ open, onClose, onSubmit, initialData }: CampaignF
                    {...register('targetType')}
                    className="focus:ring-primary h-4 w-4 text-primary border-gray-300"
                  />
-                 <span className="ml-2 text-sm text-gray-700">All Subscribers ({allSubscribers.length})</span>
+                 <span className="ml-2 text-sm text-gray-700">All Subscribers ({allsubscribers.length})</span>
                </label>
                <label className="flex items-center">
                  <input
@@ -122,8 +136,8 @@ export function CampaignForm({ open, onClose, onSubmit, initialData }: CampaignF
           {targetType === 'selected' && (
             <div className="border rounded-md p-4 max-h-60 overflow-y-auto space-y-2">
                <Label className="block text-sm font-medium text-gray-700 mb-2">Select Subscribers</Label>
-               {allSubscribers.length === 0 && <p className="text-sm text-gray-500">No subscribers available.</p>}
-               {allSubscribers.map(sub => (
+               {allsubscribers.length === 0 && <p className="text-sm text-gray-500">No subscribers available.</p>}
+               {allsubscribers.map(sub => (
                  <div key={sub.id} className="flex items-center space-x-2"> {/* Added space */}
                     <input
                       type="checkbox" // Use standard HTML checkbox

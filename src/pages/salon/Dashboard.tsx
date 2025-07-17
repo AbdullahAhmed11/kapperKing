@@ -15,19 +15,42 @@ import { useServiceStore } from '@/lib/store/services'; // Import service store
 import { formatCurrency } from '@/lib/utils'; // Import currency formatter
 import { isSameDay } from 'date-fns'; // Import date-fns helper
 import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie'; 
+import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
+type JwtPayload = {
+  Id: number; // adjust this to match your token's structure
+  email?: string;
+  name?: string;
+  FirstName?: string;
+  LastName?: string;
+  // any other fields you expect
+};
 export default function SalonDashboard() { // Renamed component
+      const navigate = useNavigate()
+  
   const [date, setDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'list' | 'agenda'>('list');
   const [showNewAppointment, setShowNewAppointment] = useState(false);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const token = Cookies.get('salonUser');
+  const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
+  useEffect(() => {
+    if(!token) {
+              navigate('/login')
 
+    }
+  },[])
+ 
   // Get state and actions from stores
   const { currentSalon, loading: salonLoading, error: salonError } = useCurrentSalonStore();
   const { appointments, fetchAppointments, loading: appointmentsLoading, error: appointmentError } = useAppointmentStore();
   const { clients, fetchClients, loading: clientsLoading, error: clientError } = useClientStore();
   const { services, fetchServices, loading: servicesLoading, error: serviceError } = useServiceStore();
 
+const [appointmentsByDate, setAppointmentsByDate] = useState([]);
 
   // Fetch data when salon context or selected date changes
  
@@ -39,7 +62,34 @@ export default function SalonDashboard() { // Renamed component
   //     fetchServices(currentSalon.id);
   //   }
   // }, [currentSalon?.id, date, salonLoading, salonError, fetchAppointments, fetchClients, fetchServices]);
+const getAppointmentsByDate = async (date: Date) => {
+  if (!decoded?.Id) return;
 
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1; // Month is 0-indexed
+  const day = date.getDate();
+  const dayOfWeek = format(date, 'EEEE'); // returns full day name like "Sunday"
+
+  try {
+          const formattedDate = format(date, 'yyyy-MM-dd');
+    
+    const response = await axios.get(
+        `https://kapperking.runasp.net/api/Appointments/GetAppointmentsByShop?id=${decoded?.Id}&date=${formattedDate}`
+    );
+      setAppointmentsByDate(response.data);
+
+    console.log('Appointments for selected date:', response.data);
+    // You can dispatch this to your Zustand store or local state if needed
+    // Example: setAppointments(response.data);
+  } catch (error) {
+    console.error('Failed to fetch appointments:', error);
+  }
+};
+useEffect(() => {
+  if (date) {
+    getAppointmentsByDate(date);
+  }
+}, [date]);
   // Calculate Stats dynamically
   const todaysAppointmentsCount = appointments.filter(app => 
      isSameDay(new Date(app.start_time), date) && 
@@ -91,7 +141,7 @@ export default function SalonDashboard() { // Renamed component
   const [infodata, setInfoData] = useState<InfoData | null>(null)
   const getInfoData = async () => {
     try{
-      const res = await axios.get(`https://kapperking.runasp.net/api/Salons/GetStatistics?id=1`)
+      const res = await axios.get(`https://kapperking.runasp.net/api/Salons/GetStatistics?id=${decoded?.Id}`)
       setInfoData(res.data);
     }catch(error) { 
       console.log(error)
@@ -103,7 +153,6 @@ export default function SalonDashboard() { // Renamed component
   return (
     <div className="space-y-6">
 
-      {/* Stats Grid - Use dynamic data */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
          {/* Today's Appointments */}
          <div className="relative bg-white overflow-hidden rounded-lg border border-gray-100 p-5">
@@ -148,15 +197,18 @@ export default function SalonDashboard() { // Renamed component
         </div>
         <div>
           {/* Pass fetched appointments to child components */}
-          {viewMode === 'list' ? (
-            <AppointmentList appointments={appointments.filter(app => isSameDay(new Date(app.start_time), date))} /> // Filter for the selected day
+{viewMode === 'list' ? (
+<AppointmentList
+  appointments={appointmentsByDate}
+  onAppointmentClick={() => {}}
+/>
           ) : (
-            <AgendaView appointments={appointments.filter(app => isSameDay(new Date(app.start_time), date))} onTimeSlotClick={handleTimeSlotClick} date={date} /> // Filter for the selected day
+<AgendaView appointments={appointmentsByDate} onTimeSlotClick={handleTimeSlotClick} date={date} />
           )}
            {/* Add message if no appointments for the selected day */}
-           {!appointmentsLoading && appointments.filter(app => isSameDay(new Date(app.start_time), date)).length === 0 && (
-              <p className="text-center text-gray-500 py-10">No appointments scheduled for this day.</p>
-           )}
+           {appointmentsByDate.length === 0 && (
+  <p className="text-center text-gray-500 py-10">No appointments scheduled for this day.</p>
+)}
         </div>
       </div>
 

@@ -201,6 +201,7 @@ import { AppointmentCalendar } from '@/components/appointments/AppointmentCalend
 // import AppointmentAddForm from '@/components/appointments/AppointmentAddForm';
 import { jwtDecode } from 'jwt-decode';
 import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
 
 interface Appointment {
   id: number;
@@ -214,9 +215,12 @@ type JwtPayload = {
   Id: number; // adjust this to match your token's structure
   email?: string;
   name?: string;
+  Role?:string;
   // any other fields you expect
 };
 export default function Appointments() {
+    const navigate = useNavigate()
+  
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -233,10 +237,15 @@ const token = Cookies.get('salonUser');
 
 // let decoded: JwtPayload | null = null;
   const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
+  useEffect(() => {
+    if(!token) {
+              navigate('/login')
 
+    }
+  },[])
 if (token) {
   // decoded = jwtDecode<JwtPayload>(token);
-  console.log('User ID:', decoded.Id);
+  // console.log('User ID:', decoded.Id);
 }
   const fetchAppointments = async (date: Date) => {
     setLoading(true);   
