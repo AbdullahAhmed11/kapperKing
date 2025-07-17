@@ -5,6 +5,9 @@ import { useClientStore, selectAllClients } from '@/lib/store/clients';
 import { formatDistanceToNow } from 'date-fns'; // For relative time
 import axios from 'axios'; // For API calls
 import {  Briefcase, Book, ClipboardList } from 'lucide-react';
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
 
 type StaticsType = {
   salons: number;
@@ -12,8 +15,21 @@ type StaticsType = {
   revenue: number | string;
   // Add other properties as needed
 };
-
+interface MyJwtPayload {
+      Id?: string;
+      Role?: string;
+      [key: string]: any;
+    }
 function PlatformDashboard() {
+    const navigate = useNavigate()
+    const token = Cookies.get('salonUser');
+    const decoded: MyJwtPayload | undefined = token ? jwtDecode<MyJwtPayload>(token) : undefined;
+
+    useEffect(() => {
+      if (!decoded?.Id || (decoded?.Role !== "SuperAdmin" && decoded?.Role !== "Admin")) {
+        navigate('/login')
+      }
+    },[])
   const [statics, setStatics] = React.useState<StaticsType | null>(null); // State for stats
   const [staticsLoading, setStaticsLoading] = React.useState(true); // Loading state for stats
   const [recentsSalons, setRecentsSalon] = React.useState<any[]>([]); // State for recent salons

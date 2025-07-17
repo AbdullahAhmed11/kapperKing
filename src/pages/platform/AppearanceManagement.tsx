@@ -6,7 +6,14 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner'; 
 import { supabase } from '@/lib/supabase';
 import axios from 'axios';
-
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
+interface MyJwtPayload {
+      Id?: string;
+      Role?: string;
+      [key: string]: any;
+    }
 interface ColorPalette {
   id: number;
   primaryColor: string;
@@ -128,6 +135,15 @@ const UrlUploadGroup: React.FC<{
 );
 
 export default function AppearanceManagement() {
+      const navigate = useNavigate()
+      const token = Cookies.get('salonUser');
+      const decoded: MyJwtPayload | undefined = token ? jwtDecode<MyJwtPayload>(token) : undefined;
+  
+      useEffect(() => {
+        if (!decoded?.Id || (decoded?.Role !== "SuperAdmin" && decoded?.Role !== "Admin")) {
+          navigate('/login')
+        }
+      },[])
   const [branding, setBranding] = useState<BrandingData | null>(null);
   const [colorPalette, setColorPalette] = useState<ColorPalette | null>(null);
   const [marketingHeader, setMarketingHeader] = useState<MarketingPageHeader | null>(null);

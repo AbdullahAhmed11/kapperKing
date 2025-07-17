@@ -86,7 +86,7 @@ function Services() {
       formData.append('Price', data.price.toString());
       // formData.append('CategoryId', data.category.toString());
       formData.append('CategoryId', "1");
-      formData.append('SalonId', decoded?.Id); // Hardcoded as per requirements
+      formData.append('SalonId', decoded?.Id?.toString() ?? ''); // Hardcoded as per requirements
 
       await axios.post(`${API_URL}/Addservice`, formData, {
         headers: {
@@ -187,7 +187,7 @@ const updateService = async (id: number, data: ServiceFormData) => {
     formData.append('Price', data.price.toString());
     formData.append('CategoryId', "1"); // Or use data.category if available
     
-    await axios.put(`${API_URL}/Editservice`, formData, {
+    await axios.post(`https://kapperking.runasp.net/api/Services/Editservice`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -309,11 +309,11 @@ const updateService = async (id: number, data: ServiceFormData) => {
 
       {/* Edit Service Form Dialog */}
   {/* Edit Service Form Dialog */}
-{showEditService && selectedService && (
+{/* {showEditService && selectedService && (
   <Dialog open={showEditService} onOpenChange={setShowEditService}>
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Edit Service</DialogTitle>
+        <DialogTitle>Edit Servicee</DialogTitle>
       </DialogHeader>
       <EditServiceForm
         initialData={{
@@ -325,6 +325,30 @@ const updateService = async (id: number, data: ServiceFormData) => {
         }}
         onSubmit={updateService}
         onCancel={() => setShowEditService(false)}
+      />
+    </DialogContent>
+  </Dialog>
+)} */}
+{showEditService && selectedService && (
+  <Dialog open={showEditService} onOpenChange={setShowEditService}>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Edit Service</DialogTitle>
+      </DialogHeader>
+      <ServiceForm
+        open={showEditService}
+   onClose={() => {
+      setShowEditService(false);
+      setSelectedService(null);  // Clear selection on close
+    }}        onSubmit={(data) => updateService(selectedService.id, data)}
+        initialData={{
+          name: selectedService.name,
+          category: selectedService.categoryName,
+          duration: selectedService.duration,
+          price: selectedService.price,
+          description: selectedService.description || ''
+        }}
+        title="Edit Service"
       />
     </DialogContent>
   </Dialog>

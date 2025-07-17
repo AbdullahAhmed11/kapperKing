@@ -11,6 +11,9 @@ import Cookies from 'js-cookie'; // Add this import at the top
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+    role: z.enum(['superadmin', 'salonowner'], {
+    required_error: 'Please select a role',
+  })
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -45,25 +48,57 @@ function Login() {
   //   }
   // };
 
+// const onSubmit = async (data: LoginFormData) => {
+//   const { email, password } = data;
+
+//   // Demo login logic
+//   if (email === 'superAdmin@gmail.com' && password === '123456789') {
+//     toast.success('Welcome Super Admin!');
+//     navigate('/platform');
+//     return;
+//   }
+
+//   if (email === 'admin@kapperking.com' && password === 'admin123') {
+//     toast.success('Welcome Admin!');
+//     navigate('/salon');
+//     return;
+//   }
+
+//   // Real API login logic
+//   try {
+//     const response = await fetch('https://kapperking.runasp.net/api/Salons/Login', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json'
+//       },
+//       body: JSON.stringify({ email, password })
+//     });
+
+//     if (response.status === 200) {
+//      const result = await response.text(); // change from .json() to .text()
+
+//   Cookies.set('salonUser', result, { expires: 7 });
+
+//       toast.success('Login successful!');
+//       navigate('/salon');
+//     } else {
+//       toast.error('Invalid email or password');
+//     }
+//   } catch (error) {
+//     console.error('Login error:', error);
+//     toast.error('Something went wrong. Please try again.');
+//   }
+// };
 const onSubmit = async (data: LoginFormData) => {
-  const { email, password } = data;
+  const { email, password, role } = data;
 
-  // Demo login logic
-  if (email === 'superAdmin@gmail.com' && password === '123456789') {
-    toast.success('Welcome Super Admin!');
-    navigate('/platform');
-    return;
-  }
+  const loginUrl =
+    role === 'superadmin'
+      ? 'https://kapperking.runasp.net/api/Users/Login'
+      : 'https://kapperking.runasp.net/api/Salons/Login';
 
-  if (email === 'admin@kapperking.com' && password === 'admin123') {
-    toast.success('Welcome Admin!');
-    navigate('/salon');
-    return;
-  }
-
-  // Real API login logic
   try {
-    const response = await fetch('https://kapperking.runasp.net/api/Salons/Login', {
+    const response = await fetch(loginUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -72,12 +107,11 @@ const onSubmit = async (data: LoginFormData) => {
     });
 
     if (response.status === 200) {
-     const result = await response.text(); // change from .json() to .text()
-
-  Cookies.set('salonUser', result, { expires: 7 });
+      const result = await response.text(); // or .json() if needed
+      Cookies.set('salonUser', result, { expires: 7 });
 
       toast.success('Login successful!');
-      navigate('/salon');
+      navigate(role === 'superadmin' ? '/platform' : '/salon');
     } else {
       toast.error('Invalid email or password');
     }
@@ -93,6 +127,25 @@ const onSubmit = async (data: LoginFormData) => {
         <div className="flex justify-center">
           <Logo size="lg" />
         </div>
+        <div>
+  <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+    Select Role
+  </label>
+  <div className="mt-1">
+    <select
+      id="role"
+      {...register('role')}
+      className="block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+    >
+      <option value="">-- Choose a role --</option>
+      <option value="superadmin">Super Admin</option>
+      <option value="salonowner">Salon Owner</option>
+    </select>
+    {errors.role && (
+      <p className="mt-2 text-sm text-red-600">{errors.role.message}</p>
+    )}
+  </div>
+</div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Sign in to your account
         </h2>
@@ -154,7 +207,7 @@ const onSubmit = async (data: LoginFormData) => {
               </button>
             </div>
           </form>
-
+{/* 
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -177,7 +230,7 @@ const onSubmit = async (data: LoginFormData) => {
                 Password: <span className="font-medium text-primary-600">admin123</span>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

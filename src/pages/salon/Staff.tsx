@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, Calendar, Mail, Phone, Loader2, AlertCircle, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Search, Edit2, Trash2, Calendar, Mail, Phone, Loader2, AlertCircle, X, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
-import Cookies from 'js-cookie'; 
+import Cookies from 'js-cookie';
 
 interface StaffMember {
   id: string;
@@ -15,6 +15,8 @@ interface StaffMember {
   email: string;
   phone: string;
   role: string;
+  imageUrl?: string;
+  imagePath?:string;
 }
 
 interface NewStylistFormData {
@@ -23,21 +25,18 @@ interface NewStylistFormData {
   email: string;
   password: string;
   phone: string;
+  imageFile?: File | null;
 }
+
 type JwtPayload = {
-  Id: number; // adjust this to match your token's structure
+  Id: number;
   email?: string;
   name?: string;
-  // any other fields you expect
 };
+
 function Staff() {
   const token = Cookies.get('salonUser');
-  
   const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
-  // if (token) {
-  //   const decoded = jwtDecode<JwtPayload>(token);
-  //   console.log('User ID:', decoded.Id);
-  // }
 
   const [searchTerm, setSearchTerm] = useState('');
   const [stylists, setStylists] = useState<StaffMember[]>([]);
@@ -54,8 +53,25 @@ function Staff() {
     lastName: '',
     email: '',
     password: '',
-    phone: ''
+    phone: '',
+    imageFile: null
   });
+
+  // Edit Staff Dialog State
+  const [showEditStaffDialog, setShowEditStaffDialog] = useState(false);
+  const [isEditingStaff, setIsEditingStaff] = useState(false);
+  const [editStaffData, setEditStaffData] = useState<NewStylistFormData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    phone: '',
+    imageFile: null
+  });
+
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const getStylists = async () => {
     try {
@@ -63,7 +79,8 @@ function Staff() {
       const response = await axios.get(`https://kapperking.runasp.net/api/Salons/GetStylists?id=${decoded?.Id}`);
       setStylists(response.data.map((stylist: any) => ({
         ...stylist,
-        id: stylist.id.toString()
+        id: stylist.id.toString(),
+        imageUrl: stylist.imageUrl || undefined
       })));
       setError(null);
     } catch (err) {
@@ -81,7 +98,16 @@ function Staff() {
   const handleEditClick = (staffMember: StaffMember, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedStaff(staffMember);
-    // Implement edit functionality as needed
+    setEditStaffData({
+      firstName: staffMember.firstName,
+      lastName: staffMember.lastName,
+      email: staffMember.email,
+      password: '',
+      phone: staffMember.phone || '',
+      imageFile: null
+    });
+    setPreviewImage(staffMember.imageUrl || null);
+    setShowEditStaffDialog(true);
   };
 
   const handleDeleteClick = async (staffMember: StaffMember, e: React.MouseEvent) => {
@@ -104,7 +130,33 @@ function Staff() {
     setShowAvailability(true);
   };
 
-  const handleNewStylistInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Update form state
+      if (isEdit) {
+        setEditStaffData(prev => ({
+          ...prev,
+          imageFile: file
+        }));
+      } else {
+        setNewStylistData(prev => ({
+          ...prev,
+          imageFile: file
+        }));
+      }
+    }
+  };
+
+  const handleAddFormInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewStylistData(prev => ({
       ...prev,
@@ -112,39 +164,105 @@ function Staff() {
     }));
   };
 
+  const handleEditFormInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditStaffData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleAddStylistSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsAddingStylist(true);
+    e.preventDefault();
+    setIsAddingStylist(true);
 
-  try {
-    const formData = new FormData();
-    formData.append('SalonId', decoded?.Id.toString() || '');
-    formData.append('FirstName', newStylistData.firstName);
-    formData.append('LastName', newStylistData.lastName);
-    formData.append('Email', newStylistData.email);
-    formData.append('Password', newStylistData.password);
-    formData.append('Phone', newStylistData.phone);
+    try {
+      const formData = new FormData();
+      formData.append('SalonId', decoded?.Id.toString() || '');
+      formData.append('FirstName', newStylistData.firstName);
+      formData.append('LastName', newStylistData.lastName);
+      formData.append('Email', newStylistData.email);
+      formData.append('Password', newStylistData.password);
+      formData.append('Phone', newStylistData.phone);
+      
+      if (newStylistData.imageFile) {
+        formData.append('Image', newStylistData.imageFile);
+      }
 
-    await axios.post('https://kapperking.runasp.net/api/Users/AddStylist', formData);
+      await axios.post('https://kapperking.runasp.net/api/Users/AddStylist', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
 
-    toast.success('Stylist added successfully!');
-    setShowAddStylistDialog(false);
-    setNewStylistData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      password: '',
-      phone: ''
-    });
-    getStylists();
-  } catch (error) {
-    console.error('Error adding stylist:', error);
-    toast.error('Failed to add stylist. Please try again.');
-  } finally {
-    setIsAddingStylist(false);
-  }
-};
+      toast.success('Stylist added successfully!');
+      setShowAddStylistDialog(false);
+      setNewStylistData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        phone: '',
+        imageFile: null
+      });
+      setPreviewImage(null);
+      getStylists();
+    } catch (error) {
+      console.error('Error adding stylist:', error);
+      // Check if error is an AxiosError and get the response message
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data);
+      } else {
+        toast.error('Error adding stylist');
+      }
+      
+    } finally {
+      setIsAddingStylist(false);
+    }
+  };
 
+  const handleEditStaffSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsEditingStaff(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('Id', selectedStaff?.id || '');
+      formData.append('FirstName', editStaffData.firstName);
+      formData.append('LastName', editStaffData.lastName);
+      formData.append('Email', editStaffData.email);
+      formData.append('Phone', editStaffData.phone);
+      
+      if (editStaffData.password) {
+        formData.append('Password', editStaffData.password);
+      }
+      
+      if (editStaffData.imageFile) {
+        formData.append('Image', editStaffData.imageFile);
+      }
+
+      await axios.post('https://kapperking.runasp.net/api/Users/EditAdmin', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      toast.success('Staff member updated successfully!');
+      setShowEditStaffDialog(false);
+      setPreviewImage(null);
+      getStylists();
+    } catch (error) {
+      console.error('Error updating staff:', error);
+      // toast.error('Failed to update staff. Please try again.');
+          if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data);
+      } else {
+        toast.error('Error adding stylist');
+      }
+    } finally {
+      setIsEditingStaff(false);
+    }
+  };
 
   const filteredStaff = stylists.filter(s =>
     `${s.firstName} ${s.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -212,10 +330,16 @@ function Staff() {
                 <div key={staffMember.id} className="bg-white rounded-lg border border-gray-100 p-4 hover:border-gray-200 transition-all duration-200">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
-                      <div className="h-20 w-20 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-medium text-indigo-600">
-                          {staffMember.firstName[0]}{staffMember.lastName[0]}
-                        </span>
+                      <div className="h-20 w-20 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {staffMember.imagePath ? (
+                          <img 
+                            src={`https://kapperking.runasp.net${staffMember.imagePath}`} 
+                            alt={`${staffMember.firstName} ${staffMember.lastName}`}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <User className="h-8 w-8 text-indigo-600" />
+                        )}
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-gray-900">
@@ -266,7 +390,12 @@ function Staff() {
       </div>
 
       {/* Add Stylist Dialog */}
-      <Dialog open={showAddStylistDialog} onOpenChange={setShowAddStylistDialog}>
+      <Dialog open={showAddStylistDialog} onOpenChange={(open) => {
+        if (!open) {
+          setPreviewImage(null);
+        }
+        setShowAddStylistDialog(open);
+      }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Add New Stylist</DialogTitle>
@@ -274,7 +403,10 @@ function Staff() {
               Fill in the details to add a new stylist to your salon.
             </DialogDescription>
             <button 
-              onClick={() => setShowAddStylistDialog(false)} 
+              onClick={() => {
+                setShowAddStylistDialog(false);
+                setPreviewImage(null);
+              }} 
               className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none"
             >
               <X className="h-4 w-4" />
@@ -282,6 +414,36 @@ function Staff() {
           </DialogHeader>
           
           <form onSubmit={handleAddStylistSubmit} className="space-y-4">
+            {/* Image Upload */}
+            <div className="flex flex-col items-center space-y-2">
+              <div className="h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                {previewImage ? (
+                  <img 
+                    src={previewImage} 
+                    alt="Preview" 
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User className="h-12 w-12 text-gray-400" />
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Upload Photo
+              </Button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => handleImageChange(e)}
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label htmlFor="firstName" className="text-sm font-medium leading-none">
@@ -291,7 +453,7 @@ function Staff() {
                   id="firstName"
                   name="firstName"
                   value={newStylistData.firstName}
-                  onChange={handleNewStylistInputChange}
+                  onChange={handleAddFormInputChange}
                   required
                 />
               </div>
@@ -303,7 +465,7 @@ function Staff() {
                   id="lastName"
                   name="lastName"
                   value={newStylistData.lastName}
-                  onChange={handleNewStylistInputChange}
+                  onChange={handleAddFormInputChange}
                   required
                 />
               </div>
@@ -318,7 +480,7 @@ function Staff() {
                 name="email"
                 type="email"
                 value={newStylistData.email}
-                onChange={handleNewStylistInputChange}
+                onChange={handleAddFormInputChange}
                 required
               />
             </div>
@@ -332,7 +494,7 @@ function Staff() {
                 name="password"
                 type="password"
                 value={newStylistData.password}
-                onChange={handleNewStylistInputChange}
+                onChange={handleAddFormInputChange}
                 required
               />
             </div>
@@ -345,7 +507,7 @@ function Staff() {
                 id="phone"
                 name="phone"
                 value={newStylistData.phone}
-                onChange={handleNewStylistInputChange}
+                onChange={handleAddFormInputChange}
                 required
               />
             </div>
@@ -354,7 +516,10 @@ function Staff() {
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => setShowAddStylistDialog(false)}
+                onClick={() => {
+                  setShowAddStylistDialog(false);
+                  setPreviewImage(null);
+                }}
               >
                 Cancel
               </Button>
@@ -365,6 +530,159 @@ function Staff() {
                     Adding...
                   </>
                 ) : 'Add Stylist'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Staff Dialog */}
+      <Dialog open={showEditStaffDialog} onOpenChange={(open) => {
+        if (!open) {
+          setPreviewImage(null);
+        }
+        setShowEditStaffDialog(open);
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Staff Member</DialogTitle>
+            <DialogDescription>
+              Update the details for {selectedStaff?.firstName} {selectedStaff?.lastName}.
+            </DialogDescription>
+            <button 
+              onClick={() => {
+                setShowEditStaffDialog(false);
+                setPreviewImage(null);
+              }} 
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </DialogHeader>
+          
+          <form onSubmit={handleEditStaffSubmit} className="space-y-4">
+            {/* Image Upload */}
+            <div className="flex flex-col items-center space-y-2">
+              <div className="h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                {previewImage ? (
+                  <img 
+                    src={previewImage} 
+                    alt="Preview" 
+                    className="h-full w-full object-cover"
+                  />
+                ) : selectedStaff?.imageUrl ? (
+                  <img 
+                    src={selectedStaff.imageUrl} 
+                    alt={`${selectedStaff.firstName} ${selectedStaff.lastName}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User className="h-12 w-12 text-gray-400" />
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => editFileInputRef.current?.click()}
+              >
+                Change Photo
+              </Button>
+              <input
+                type="file"
+                ref={editFileInputRef}
+                onChange={(e) => handleImageChange(e, true)}
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="editFirstName" className="text-sm font-medium leading-none">
+                  First Name
+                </label>
+                <Input
+                  id="editFirstName"
+                  name="firstName"
+                  value={editStaffData.firstName}
+                  onChange={handleEditFormInputChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="editLastName" className="text-sm font-medium leading-none">
+                  Last Name
+                </label>
+                <Input
+                  id="editLastName"
+                  name="lastName"
+                  value={editStaffData.lastName}
+                  onChange={handleEditFormInputChange}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="editEmail" className="text-sm font-medium leading-none">
+                Email
+              </label>
+              <Input
+                id="editEmail"
+                name="email"
+                type="email"
+                value={editStaffData.email}
+                onChange={handleEditFormInputChange}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="editPassword" className="text-sm font-medium leading-none">
+                New Password (leave blank to keep current)
+              </label>
+              <Input
+                id="editPassword"
+                name="password"
+                type="password"
+                value={editStaffData.password}
+                onChange={handleEditFormInputChange}
+                placeholder="Leave blank to keep current password"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="editPhone" className="text-sm font-medium leading-none">
+                Phone Number
+              </label>
+              <Input
+                id="editPhone"
+                name="phone"
+                value={editStaffData.phone}
+                onChange={handleEditFormInputChange}
+                required
+              />
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowEditStaffDialog(false);
+                  setPreviewImage(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isEditingStaff}>
+                {isEditingStaff ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : 'Update Staff'}
               </Button>
             </div>
           </form>

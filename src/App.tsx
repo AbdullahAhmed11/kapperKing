@@ -71,6 +71,7 @@ import SalonBooking from './pages/salon/[slug]/book';
 // const marketingPageLoader = ... (Remove loader)
 import Categories from './pages/salon/Categories'; // Assuming categories is similar to clients
 import Success from './pages/Success';
+import Booked from './pages/Booked';
 function App() {
   return (
 
@@ -168,6 +169,7 @@ function App() {
             {/* Salon Microsite Routes */}
             <Route path="/s/:slug/:id" element={<SalonMicrosite />} />
             <Route path="/s/:slug/book" element={<SalonBooking />} />
+            <Route path="/booked" element={<Booked/>} />
             <Route path="/s/:slug/:id/login" element={<CustomerLoginPage />} />
             <Route path="/s/:slug/:id/signup" element={<CustomerSignUpPage />} />
           </Routes>

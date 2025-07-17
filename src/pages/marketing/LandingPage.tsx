@@ -226,12 +226,12 @@ export default function LandingPage() {
         {/* Centered content */}
         <div className="relative max-w-4xl mx-auto py-24 px-4 sm:py-32 sm:px-6 lg:px-8 text-center z-10">
           {/* Prominent Logo */}
-           <img
+           {/* <img
              src={logoUrl || '/logos/marketing-logo.png'}
              alt="KapperKing Logo"
              className="h-28 w-auto mx-auto mb-10 drop-shadow-lg transition-transform duration-300 hover:scale-105" // Larger size, more margin, hover scale effect
              onError={(e) => (e.currentTarget.src = '/logos/marketing-logo.png')} // Fallback
-           />
+           /> */}
           <div className="max-w-2xl mx-auto"> {/* Center text content */}
             {/* Apply font-heading */}
             <h1

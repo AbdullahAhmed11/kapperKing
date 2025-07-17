@@ -19,9 +19,10 @@ interface IndividualEmailFormProps {
   open: boolean;
   onClose: () => void;
   recipientEmail: string | null;
+  selectedRecipient: any;
 }
 
-export function IndividualEmailForm({ open, onClose, recipientEmail }: IndividualEmailFormProps) {
+export function IndividualEmailForm({ open, onClose, recipientEmail , selectedRecipient}: IndividualEmailFormProps) {
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<EmailFormData>({
     resolver: zodResolver(emailSchema),
     defaultValues: { subject: '', body: '' }
@@ -33,40 +34,41 @@ export function IndividualEmailForm({ open, onClose, recipientEmail }: Individua
     }
   }, [open, recipientEmail, reset]);
 
-  const handleFormSubmit = async (data: EmailFormData) => {
-    if (!recipientEmail) {
-      toast.error("No recipient selected.");
-      return;
+const handleFormSubmit = async (data: EmailFormData) => {
+  if (!recipientEmail) {
+    toast.error("No recipient selected.");
+    return;
+  }
+
+  try {
+    // You should fetch the subscriber ID from somewhere instead of hardcoding 0
+    const response = await fetch('https://kapperking.runasp.net/api/SuperAdmin/SendEmail', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({
+        id: selectedRecipient.id, // <== Replace this with actual subscriber ID if possible
+        subject: data.subject,
+        body: data.body,
+        isHtml: true
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to send email');
     }
 
-    try {
-      const response = await fetch('https://kapperking.runasp.net/api/SuperAdmin/SendEmail', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // Adjust if you use different auth
-        },
-        body: JSON.stringify({
-          id: 8, // Set to fixed value 8 as requested
-          subject: data.subject,
-          body: data.body,
-          isHtml: true,
-          to: recipientEmail // Ensure this matches your API expectations
-        })
-      });
+    toast.success('Email sent successfully!');
+    onClose();
+  } catch (error: any) {
+    toast.error(error.message || 'Failed to send email');
+    console.error('Error sending email:', error);
+  }
+};
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to send email');
-      }
-
-      toast.success('Email sent successfully!');
-      onClose();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to send email');
-      console.error('Error sending email:', error);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

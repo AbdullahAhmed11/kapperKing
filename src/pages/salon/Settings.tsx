@@ -1,149 +1,202 @@
-import React, { useEffect, useState } from 'react'; // Import useState
-// Removed duplicate React import below
+import React, { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'; // Import Card components
-import { Badge } from '@/components/ui/badge'; // Import Badge
 import { Label } from '@/components/ui/label';
-import { useCurrentSalonStore, Salon } from '@/lib/store/currentSalon';
-import { ExternalLink } from 'lucide-react'; // Import ExternalLink icon
+import { ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react'; // Import Loader
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
-import Cookies from 'js-cookie'; 
+import Cookies from 'js-cookie';
+
 type JwtPayload = {
-  Id: number; // adjust this to match your token's structure
+  Id: number;
   email?: string;
   name?: string;
   FirstName?: string;
   LastName?: string;
-  // any other fields you expect
 };
-// Schema matching editable fields in the 'salons' table and Salon interface
+
+type SalonData = {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  country: string;
+  salonPhone: string;
+  website: string;
+  ownerId: number;
+  subscriptionId: number;
+  email: string;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  longitude: number;
+  latitude: number;
+  image: string | null;
+  stripeAccountId?: string | null;
+};
+
 const salonSettingsSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address').nullable(), // Allow null
-  phone: z.string().optional().nullable(),
-  address_line1: z.string().optional().nullable(), // Use snake_case from DB/interface
-  address_line2: z.string().optional().nullable(),
-  city: z.string().optional().nullable(),
-  postal_code: z.string().optional().nullable(),
-  country: z.string().optional().nullable(),
-  timezone: z.string().optional().nullable(),
-  currency: z.string().optional().nullable(),
-  primaryColor: z.string().optional().nullable(), // Add dashboard color schema
-  dashboard_secondary_color: z.string().optional().nullable(), // Add dashboard color schema
+  email: z.string().email('Invalid email address'),
+  salonPhone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  postalCode: z.string().optional(),
+  country: z.string().optional(),
+  primaryColor: z.string().optional().nullable(),
+  secondaryColor: z.string().optional().nullable(),
+  image: z.instanceof(FileList).optional().nullable(),
 });
 
-// Type for form data derived from schema
 type SalonSettingsFormData = z.infer<typeof salonSettingsSchema>;
 
 export default function Settings() {
- 
+const [salonData, setSalonData] = useState<SalonData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [connectingStripe, setConnectingStripe] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const token = Cookies.get('salonUser');
   const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
-  if (token && decoded) {
-    console.log('User ID:', decoded.Id);
-  }
 
-
-
-
-  const [isConnectingStripe, setIsConnectingStripe] = useState(false); // State for button loading
-  // Use the correct store
-  const { currentSalon, updateCurrentSalonDetails, initiateStripeConnectOnboarding, loading, error } = useCurrentSalonStore(); // Add onboarding action
-
-  const { register, handleSubmit, formState: { errors, isDirty, isSubmitting }, reset } = useForm<SalonSettingsFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<SalonSettingsFormData>({
     resolver: zodResolver(salonSettingsSchema),
-    // Default values will be set by useEffect
   });
 
-  // Populate form when currentSalon data loads or changes
+  // Watch color fields to ensure they update properly
+  const primaryColor = watch('primaryColor');
+  const secondaryColor = watch('secondaryColor');
 
-const onSubmit = async (data: SalonSettingsFormData) => {
-  if (!decoded?.Id) {
-    toast.error("User ID missing.");
-    return;
-  }
+  useEffect(() => {
+    const fetchSalonData = async () => {
+      try {
+        const response = await axios.get(`https://kapperking.runasp.net/api/Salons/GetSalonById/${decoded?.Id}`);
+        setSalonData(response.data);
+        reset({
+          name: response.data.name,
+          email: response.data.email,
+          salonPhone: response.data.salonPhone,
+          address: response.data.address,
+          city: response.data.city,
+          postalCode: response.data.postalCode,
+          country: response.data.country,
+          primaryColor: response.data.primaryColor || '#4f46e5',
+          secondaryColor: response.data.secondaryColor || '#ec4899',
+        });
+      } catch (err) {
+        setError('Failed to fetch salon data');
+        toast.error('Failed to load salon settings');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const formData = new FormData();
-  formData.append("Id", decoded.Id.toString());
-  formData.append("Name", data.name);
-  if (data.email) formData.append("Email", data.email);
-  if (data.phone) formData.append("SalonPhone", data.phone);
-  if (data.address_line1) formData.append("Address", data.address_line1); // assuming line1 = main address
-  if (data.city) formData.append("City", data.city);
-  if (data.postal_code) formData.append("PostalCode", data.postal_code);
-  if (data.country) formData.append("Country", data.country);
-  if (data.timezone) formData.append("Timezone", data.timezone);
-  if (data.currency) formData.append("Currency", data.currency);
-  if (data.primaryColor) formData.append("PrimaryColor", data.primaryColor);
-  if (data.dashboard_secondary_color) formData.append("SecondaryColor", data.dashboard_secondary_color);
-  // Add other fields if needed
+    fetchSalonData();
+  }, [reset]);
 
-  try {
-    const response = await axios.put("https://kapperking.runasp.net/api/Salons/EditSalon", formData);
-    if (response.status === 200) {
-      toast.success("Salon updated successfully");
-      reset(data); // Update form dirty state
-    } else {
-      toast.error(`Update failed with status ${response.status}`);
+  const connectStripeAccount = async () => {
+    try {
+      setConnectingStripe(true);
+      // Replace with your actual Stripe connection endpoint
+      const response = await axios.post('https://kapperking.runasp.net/api/Payment/ConnectStripe', {
+        salonId: salonData?.id,
+      });
+      
+      if (response.data.url) {
+        window.location.href = response.data.url;
+      }
+    } catch (error) {
+      toast.error('Failed to connect Stripe account');
+    } finally {
+      setConnectingStripe(false);
     }
-  } catch (error: any) {
-    toast.error(error?.response?.data?.message || "Error updating salon");
-    console.error(error);
-  }
-};
+  };
 
+  const onSubmit = async (data: SalonSettingsFormData) => {
+    try {
+      const formData = new FormData();
+      
+      // Append all fields to FormData
+      formData.append('Id', salonData?.id.toString() || '');
+      formData.append('Name', data.name);
+      formData.append('Email', data.email);
+      formData.append('SalonPhone', data.salonPhone || '');
+      formData.append('Address', data.address || '');
+      formData.append('City', data.city || '');
+      formData.append('PostalCode', data.postalCode || '');
+      formData.append('Country', data.country || '');
+      
+      // Ensure color fields are properly included
+      formData.append('PrimaryColor', data.primaryColor || '');
+      formData.append('SecondaryColor', data.secondaryColor || '');
+      
+      // Append image if it exists
+      if (data.image && data.image.length > 0) {
+        formData.append('Image', data.image[0]);
+      }
 
-  if (loading && !currentSalon) { // Show loading only if salon hasn't loaded yet
+      const response = await axios.put(
+        'https://kapperking.runasp.net/api/Salons/EditSalon',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      toast.success('Salon settings updated successfully');
+      
+      // Update local state with new data
+      if (response.data) {
+        setSalonData(response.data);
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      toast.error('Failed to update salon settings');
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setValue('image', e.target.files);
+    }
+  };
+
+  const handleColorChange = (field: 'primaryColor' | 'secondaryColor', value: string) => {
+    setValue(field, value, { shouldValidate: true });
+  };
+
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-full p-10">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
       </div>
     );
   }
-  
+
   if (error) {
-     return <div className="p-4 text-red-700">Error loading settings: {error}</div>;
+    return <div className="text-red-500 p-4">{error}</div>;
   }
 
-  // if (!currentSalon) {
-  //    return <div className="p-6 text-center text-gray-500">Salon data not available.</div>;
-  // }
+  if (!salonData) {
+    return <div className="p-4">No salon data available</div>;
+  }
 
-    const [dataInfo, setDataInfo] = useState(null)
-    const getInfoData = async () => {
-      try {
-        const res = await axios.get(`https://kapperking.runasp.net/api/Salons/GetSalonById/${decoded?.Id}`)
-        setDataInfo(res.data)
-          reset({
-        name: res.data.name,
-        email: res.data.email,
-        phone: res.data.salonPhone,
-        address_line1: res.data.address,
-        address_line2: res.data.address,
-        city: res.data.city,
-        postal_code: res.data.postalCode,
-        country: res.data.country,
-        timezone: res.data.timezone,
-        primaryColor: res.data.primaryColor,
-        dashboard_secondary_color: res.data.secondaryColor
-        // Add other fields here if needed
-      });
-      }catch(error){
-        console.log(error)
-      }
-    }
-    useEffect(() => {
-      getInfoData()
-    },[])
-   return (
-    <div className="max-w-4xl mx-auto">
+  return (
+    <div className="max-w-4xl mx-auto p-6">
       <div className="space-y-6 divide-y divide-gray-200">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Salon Settings</h1>
@@ -159,17 +212,39 @@ const onSubmit = async (data: SalonSettingsFormData) => {
             <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-4">
                 <Label htmlFor="name">Salon Name</Label>
-                <Input id="name" {...register('name')} className="mt-1" />
-                {errors.name && <p className="mt-2 text-sm text-red-600">{errors.name.message}</p>}
+                <Input
+                  id="name"
+                  type="text"
+                  {...register('name')}
+                  className="mt-1 block w-full"
+                  placeholder="My Salon"
+                />
+                {errors.name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                )}
               </div>
               <div className="sm:col-span-4">
                 <Label htmlFor="email">Contact Email</Label>
-                <Input id="email" type="email" {...register('email')} className="mt-1" />
-                {errors.email && <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>}
+                <Input
+                  id="email"
+                  type="email"
+                  {...register('email')}
+                  className="mt-1 block w-full"
+                  placeholder="example@salon.com"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                )}
               </div>
               <div className="sm:col-span-4">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" type="tel" {...register('phone')} className="mt-1" />
+                <Label htmlFor="salonPhone">Phone</Label>
+                <Input
+                  id="salonPhone"
+                  type="tel"
+                  {...register('salonPhone')}
+                  className="mt-1 block w-full"
+                  placeholder="+1 555-1234"
+                />
               </div>
             </div>
           </div>
@@ -179,144 +254,191 @@ const onSubmit = async (data: SalonSettingsFormData) => {
             <h3 className="text-lg font-medium text-gray-900">Address</h3>
             <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-6">
-                <Label htmlFor="address_line1">Street Address</Label>
-                <Input id="address_line1" {...register('address_line1')} className="mt-1" />
-              </div>
-               <div className="sm:col-span-6">
-                <Label htmlFor="address_line2">Address Line 2 (Optional)</Label>
-                <Input id="address_line2" {...register('address_line2')} className="mt-1" />
+                <Label htmlFor="address">Street Address</Label>
+                <Input
+                  id="address"
+                  type="text"
+                  {...register('address')}
+                  className="mt-1 block w-full"
+                  placeholder="123 Main St"
+                />
               </div>
               <div className="sm:col-span-2">
                 <Label htmlFor="city">City</Label>
-                <Input id="city" {...register('city')} className="mt-1" />
+                <Input
+                  id="city"
+                  type="text"
+                  {...register('city')}
+                  className="mt-1 block w-full"
+                  placeholder="New York"
+                />
               </div>
               <div className="sm:col-span-2">
-                <Label htmlFor="postal_code">Postal Code</Label>
-                <Input id="postal_code" {...register('postal_code')} className="mt-1" />
+                <Label htmlFor="postalCode">Postal Code</Label>
+                <Input
+                  id="postalCode"
+                  type="text"
+                  {...register('postalCode')}
+                  className="mt-1 block w-full"
+                  placeholder="10001"
+                />
               </div>
               <div className="sm:col-span-2">
                 <Label htmlFor="country">Country</Label>
-                {/* TODO: Use a proper country select component */}
-                <Input id="country" {...register('country')} className="mt-1" />
-              </div>
-            </div>
-          </div>
-
-          {/* Business Settings */}
-          <div className="space-y-6 pt-6">
-            <h3 className="text-lg font-medium text-gray-900">Business Settings</h3>
-            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-              <div className="sm:col-span-3">
-                <Label htmlFor="timezone">Timezone</Label>
-                {/* TODO: Use a proper timezone select component */}
-                <Input id="timezone" {...register('timezone')} className="mt-1" />
-              </div>
-              <div className="sm:col-span-3">
-                <Label htmlFor="currency">Currency</Label>
-                 {/* TODO: Use a proper currency select component */}
-                <Input id="currency" {...register('currency')} className="mt-1" />
+                <Input
+                  id="country"
+                  type="text"
+                  {...register('country')}
+                  className="mt-1 block w-full"
+                  placeholder="USA"
+                />
               </div>
             </div>
           </div>
 
           {/* Dashboard Appearance */}
-          <div className="space-y-6 pt-6">
-            <h3 className="text-lg font-medium text-gray-900">Dashboard Appearance</h3>
-            <p className="text-sm text-gray-500">Customize the primary and secondary colors of your salon dashboard sidebar and accents.</p>
-            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-               {/* Primary Color */}
-               <div className="sm:col-span-3">
-                  <Label htmlFor="dashboardPrimaryColor">Dashboard Primary Color</Label>
-                  <div className="mt-1 flex rounded-md shadow-sm">
-                     <Input
-                        type="color"
-                        id="dashboardPrimaryColor"
-                        // Use defaultValue from currentSalon, register for form state
-                        defaultValue={dataInfo?.primaryColor || '#4f46e5'} // Default Indigo
-                        {...register('primaryColor')}
-                        className="w-12 p-1 rounded-l-md border-r-0"
-                     />
-                     <Input
-                        type="text"
-                        // Use defaultValue from currentSalon, register for form state
-                        defaultValue={dataInfo?.primaryColor|| '#4f46e5'}
-                        {...register('primaryColor')}
-                        className="flex-1 rounded-l-none"
-                     />
-                  </div>
-                  {errors.primaryColor && <p className="mt-1 text-sm text-red-600">{errors.primaryColor.message}</p>}
-               </div>
-               {/* Secondary Color */}
-                <div className="sm:col-span-3">
-                  <Label htmlFor="dashboardSecondaryColor">Dashboard Secondary Color</Label>
-                  <div className="mt-1 flex rounded-md shadow-sm">
-                     <Input
-                        type="color"
-                        id="dashboardSecondaryColor"
-                        defaultValue={currentSalon?.dashboard_secondary_color || '#ec4899'} // Default Pink
-                        {...register('dashboard_secondary_color')}
-                        className="w-12 p-1 rounded-l-md border-r-0"
-                     />
-                     <Input
-                        type="text"
-                        defaultValue={currentSalon?.dashboard_secondary_color || '#ec4899'}
-                        {...register('dashboard_secondary_color')}
-                        className="flex-1 rounded-l-none"
-                     />
-                  </div>
-                  {errors.dashboard_secondary_color && <p className="mt-1 text-sm text-red-600">{errors.dashboard_secondary_color.message}</p>}
-               </div>
-               {/* TODO: Add Logo Upload field here */}
+      <div className="space-y-6 pt-6">
+          <h3 className="text-lg font-medium text-gray-900">Dashboard Appearance</h3>
+          <p className="text-sm text-gray-500">
+            Customize the primary and secondary colors of your salon dashboard.
+          </p>
+          <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+            <div className="sm:col-span-3">
+              <Label htmlFor="primaryColor">Primary Color</Label>
+              <div className="mt-1 flex rounded-md shadow-sm">
+                <input
+                  type="color"
+                  value={primaryColor || '#4f46e5'}
+                  onChange={(e) => handleColorChange('primaryColor', e.target.value)}
+                  className="w-12 p-1 rounded-l-md border-r-0"
+                />
+                <Input
+                  id="primaryColor"
+                  type="text"
+                  value={primaryColor || ''}
+                  onChange={(e) => handleColorChange('primaryColor', e.target.value)}
+                  className="flex-1 rounded-l-none"
+                />
+              </div>
+              {errors.primaryColor && (
+                <p className="mt-1 text-sm text-red-600">{errors.primaryColor.message}</p>
+              )}
             </div>
-             {/* Add fields for logo upload, maybe theme selection later */}
-           </div>
+            <div className="sm:col-span-3">
+              <Label htmlFor="secondaryColor">Secondary Color</Label>
+              <div className="mt-1 flex rounded-md shadow-sm">
+                <input
+                  type="color"
+                  value={secondaryColor || '#ec4899'}
+                  onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
+                  className="w-12 p-1 rounded-l-md border-r-0"
+                />
+                <Input
+                  id="secondaryColor"
+                  type="text"
+                  value={secondaryColor || ''}
+                  onChange={(e) => handleColorChange('secondaryColor', e.target.value)}
+                  className="flex-1 rounded-l-none"
+                />
+              </div>
+              {errors.secondaryColor && (
+                <p className="mt-1 text-sm text-red-600">{errors.secondaryColor.message}</p>
+              )}
+            </div>
+          </div>
+        </div>
 
-           {/* Payment Gateway Integration */}
-           <div className="space-y-6 pt-6">
-             <h3 className="text-lg font-medium text-gray-900">Payment Settings</h3>
-             <Card>
-                <CardHeader>
-                   <CardTitle className="text-base">Stripe Connection</CardTitle>
-                   <CardDescription>Connect your Stripe account to accept online payments for products or appointment deposits.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                   {currentSalon?.stripe_connect_account_id ? (
-                      <div className="flex items-center space-x-3">
-                         <span className="text-sm font-medium text-green-600">Stripe Account Connected</span>
-                         <Badge variant="secondary">{currentSalon.stripe_connect_account_id}</Badge>
-                         {/* TODO: Add button to view Stripe Dashboard or disconnect */}
-                      </div>
-                   ) : (
-                      <Button
-                         onClick={async () => {
-                            if (!currentSalon?.id) return;
-                            setIsConnectingStripe(true);
-                            const onboardingUrl = await initiateStripeConnectOnboarding(currentSalon.id);
-                            if (onboardingUrl) {
-                               window.location.href = onboardingUrl; // Redirect user to Stripe
-                            } else {
-                               // Error toast handled in store action
-                               setIsConnectingStripe(false);
-                            }
-                         }}
-                         disabled={isConnectingStripe || loading}
-                      >
-                         {isConnectingStripe && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                         Connect with Stripe
-                         <ExternalLink className="ml-2 h-4 w-4"/>
-                      </Button>
-                   )}
-                </CardContent>
-             </Card>
-             {/* TODO: Add Mollie Integration section if needed */}
-           </div>
+          {/* Image Upload */}
+          <div className="space-y-6 pt-6">
+            <h3 className="text-lg font-medium text-gray-900">Salon Image</h3>
+            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+              <div className="sm:col-span-6">
+                <Label htmlFor="image">Upload New Image</Label>
+                <Input
+                  id="image"
+                  type="file"
+                  accept="image/*"
+                  className="mt-1 block w-full"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                />
+                {salonData.image && (
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">Current Image:</p>
+                    <img 
+                      src={salonData.image} 
+                      alt="Salon" 
+                      className="mt-1 h-32 w-32 object-cover rounded"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
-           {/* Removed duplicate placeholder section */}
+          {/* Website */}
+          {salonData.website && (
+            <div className="pt-6">
+              <Label>Website</Label>
+              <div className="mt-1 flex items-center">
+                <a
+                  href={salonData.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline flex items-center"
+                >
+                  {salonData.website} <ExternalLink className="ml-1 h-4 w-4" />
+                </a>
+              </div>
+            </div>
+          )}
+        <div className="space-y-6 pt-6">
+          <h3 className="text-lg font-medium text-gray-900">Payment Settings</h3>
+          <div className="border rounded-lg p-4 shadow-sm">
+            <h4 className="text-base font-semibold">Stripe Connection</h4>
+            <p className="text-sm text-gray-500">
+              Connect your Stripe account to accept online payments for products or appointment deposits.
+            </p>
+            
+            {salonData.stripeAccountId ? (
+              <div className="mt-4 flex items-center space-x-3">
+                <span className="text-sm font-medium text-green-600">Stripe Account Connected</span>
+                <span className="bg-gray-100 text-sm px-2 py-1 rounded">
+                  {salonData.stripeAccountId}
+                </span>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <Button
+                  type="button"
+                  onClick={connectStripeAccount}
+                  disabled={connectingStripe}
+                >
+                  {connectingStripe ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    'Connect Stripe Account'
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+          {/* Submit Button */}
           <div className="pt-6">
             <div className="flex justify-end">
-              <Button type="submit" disabled={!isDirty || isSubmitting || loading} className="ml-3">
-                {(isSubmitting || loading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Changes
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
               </Button>
             </div>
           </div>

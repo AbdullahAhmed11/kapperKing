@@ -14,11 +14,21 @@ export function SubscriberList() {
   const [showEmailForm, setShowEmailForm] = useState(false); // State for modal visibility
   const [selectedRecipient, setSelectedRecipient] = useState<Subscriber | null>(null); // State for recipient data
 
-  const handleDeleteSubscriber = (id: string, email: string) => {
-    if (window.confirm(`Are you sure you want to delete subscriber ${email}?`)) {
-      deleteSubscriber(id); // Call store action
+const handleDeleteSubscriber = async (id: string, email: string) => {
+  if (window.confirm(`Are you sure you want to delete subscriber ${email}?`)) {
+    try {
+      const url = `https://kapperking.runasp.net/api/SuperAdmin/DeleteSubscriber/${id}`;
+      await axios.delete(url);
+      toast.success(`Subscriber ${email} deleted successfully.`);
+      // Refresh the subscriber list after deletion
+      getAllSubscribers();
+    } catch (error) {
+      console.error('Failed to delete subscriber:', error);
+      toast.error('Failed to delete subscriber');
     }
-  };
+  }
+};
+
 
   // Placeholder function for sending individual email
   const handleSendIndividualEmail = async (recipient: string, subject: string, body: string): Promise<boolean> => {
@@ -52,7 +62,7 @@ export function SubscriberList() {
   return (
     <div className="bg-white shadow rounded-lg border">
       <div className="p-6 border-b">
-        <h3 className="text-lg font-medium text-gray-900">Subscribers ({subscribers.length})</h3>
+        <h3 className="text-lg font-medium text-gray-900">Subscribers ({allsubscribers.length})</h3>
         {/* Add search/filter controls here later if needed */}
       </div>
       <div className="overflow-x-auto">
@@ -123,6 +133,7 @@ export function SubscriberList() {
           setShowEmailForm(false);
           setSelectedRecipient(null);
         }}
+        selectedRecipient={selectedRecipient}
         recipientEmail={selectedRecipient?.email || null}
         onSend={handleSendIndividualEmail}
       />

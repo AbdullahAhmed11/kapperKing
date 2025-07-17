@@ -9,7 +9,24 @@ import { useClientStore, selectAllClients, Client } from '@/lib/store/clients';
 import { useSubscriptionPlanStore, selectAllPlans } from '@/lib/store/subscriptionPlans';
 import AddSalonForm from '@/components/platform/forms/AddSalonForm';
 import EditSalonForm from '@/components/platform/forms/EditSalonForm';
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
+interface MyJwtPayload {
+      Id?: string;
+      Role?: string;
+      [key: string]: any;
+    }
 function SalonManagement() {
+      const navigate = useNavigate()
+      const token = Cookies.get('salonUser');
+      const decoded: MyJwtPayload | undefined = token ? jwtDecode<MyJwtPayload>(token) : undefined;
+      useEffect(() => {
+        if (!decoded?.Id || (decoded?.Role !== "SuperAdmin" && decoded?.Role !== "Admin")) {
+          navigate('/login')
+        }
+      },[])
+
   const [showNewSalon, setShowNewSalon] = useState(false);
   const [showEditSalon, setShowEditSalon] = useState(false);
   const [selectedSalon, setSelectedSalon] = useState<any>(null); // Keep any for now, update if SalonForm needs specific type
@@ -245,7 +262,7 @@ const handleEditClick = async (salonId: number) => {
                   <div className="h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0"> {/* Added flex-shrink-0 */}
                     <Store className="h-5 w-5 text-indigo-600" />
                   </div>
-                  <div className="min-w-0"> {/* Added min-w-0 for truncation */}
+                  <div className="min-w-0 max-w-[180px]"> {/* Added min-w-0 for truncation */}
                     <h3 className="text-lg font-medium text-gray-900 truncate">{salon.name}</h3> {/* Added truncate */}
                     <p className="text-sm text-gray-500 truncate">Owner: {salon.ownerName}</p> 
                   </div>

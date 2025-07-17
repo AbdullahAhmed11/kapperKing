@@ -19,7 +19,8 @@ import { useAuth } from '@/lib/auth';
 import { useThemeStore } from '@/lib/theme'; // Import theme store
 import axios from 'axios';
 import { get } from 'http';
-
+import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
 const navigation = [
   { name: 'Dashboard', href: '/platform', icon: LayoutDashboard },
   { name: 'Salons', href: '/platform/salons', icon: Store },
@@ -38,6 +39,8 @@ interface PlatformSidebarProps {
 }
 
 function PlatformSidebar({ isCollapsed, toggleSidebar }: PlatformSidebarProps) {
+    const navigate = useNavigate()
+  
   const location = useLocation();
   const { signOut } = useAuth();
   const { dashboardSidebarColor, dashboardLogoUrl, dashboardSidebarTextColor } = useThemeStore((state) => state.currentTheme);
@@ -73,7 +76,14 @@ function PlatformSidebar({ isCollapsed, toggleSidebar }: PlatformSidebarProps) {
     GetBranding();
     GetColorPalette();
   },[])
-
+   const handleLogout = async () => {
+    try {
+      Cookies.remove('salonUser'); // Remove salonUser cookie
+      navigate('/login'); // Redirect to login page
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
   return (
     <div 
       className={`
@@ -147,7 +157,7 @@ function PlatformSidebar({ isCollapsed, toggleSidebar }: PlatformSidebarProps) {
         </nav>
         <div className="px-3 mt-auto">
           <button
-            onClick={() => signOut()}
+            onClick={handleLogout}
             className="group flex items-center px-2 py-2 text-sm font-medium rounded-md hover:bg-indigo-800 hover:text-white w-full" // Remove default text color
             style={{ color: dashboardSidebarTextColor || '#D1D5DB' }} // Apply dynamic text color
             title={isCollapsed ? 'Sign Out' : ''}

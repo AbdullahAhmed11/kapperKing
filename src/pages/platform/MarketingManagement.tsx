@@ -9,121 +9,175 @@ import { CampaignForm } from '@/components/platform/forms/CampaignForm';
 import { SubscriberList } from '@/components/platform/marketing/SubscriberList'; 
 import axios from 'axios';
 const API_BASE_URL = 'https://kapperking.runasp.net/api/SuperAdmin';
-
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
+interface MyJwtPayload {
+      Id?: string;
+      Role?: string;
+      [key: string]: any;
+    }
 export default function MarketingManagement() {
-  const [statics, setStatics] = useState<any>(null); // State for stats
-  const [staticsLoading, setStaticsLoading] = useState(true); // Loading state for stats
+ const navigate = useNavigate();
+  const token = Cookies.get('salonUser');
+  const decoded: MyJwtPayload | undefined = token ? jwtDecode<MyJwtPayload>(token) : undefined;
 
-  const getMarktingStatics = async () => {
+  useEffect(() => {
+    if (!decoded?.Id || (decoded?.Role !== "SuperAdmin" && decoded?.Role !== "Admin")) {
+      navigate('/login');
+    }
+  }, []);
+
+  const [statics, setStatics] = useState<any>(null);
+  const [staticsLoading, setStaticsLoading] = useState(true);
+  const [allsubscribers, setAllSubscribers] = useState<Subscriber[]>([]);
+
+  const getAllSubscribers = async () => {
     try {
-      const response = await axios.get(`https://kapperking.runasp.net/api/SuperAdmin/GetMarketingStatics`);
-   
+      const res = await axios.get(`${API_BASE_URL}/GetSubscribers`);
+      const data = res.data || [];
+      setAllSubscribers(data);
+    } catch (error) {
+      console.error('Failed to fetch subscribers:', error);
+      toast.error('Failed to fetch subscribers');
+    }
+  };
+
+  useEffect(() => {
+    getAllSubscribers();
+  }, []);
+
+  const getMarketingStatics = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/GetMarketingStatics`);
       const data = await response.data;
       setStatics(data);
     } catch (error) {
-      console.error('Error fetching marketing statistics:', error);   
+      console.error('Error fetching marketing statistics:', error);
       toast.error('Failed to load marketing statistics');
-    } finally {   
-      setStaticsLoading(false); // Set loading to false after fetching
+    } finally {
+      setStaticsLoading(false);
     }
-
-  }
+  };
 
   useEffect(() => {
-    getMarktingStatics()
-  },[])
+    getMarketingStatics();
+  }, []);
 
-  const [campaigns, setCampaigns] = useState<any[]>([]); // Local state for campaigns
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-    const fetchCampaigns = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/GetCampains`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch campaigns');
-        }
-        const data: Campaign[] = await response.json();
-        // Add mock stats for demonstration (replace with actual stats from API if available)
-        const campaignsWithStats = data.map(campaign => ({
-          ...campaign,
-          stats: {
-            opened: Math.floor(Math.random() * 1000),
-            clicked: Math.floor(Math.random() * 100),
-            sent: 1000,
-            openRate: Math.random() * 100,
-            clickRate: Math.random() * 10
-          }
-        }));
-        setCampaigns(campaignsWithStats);
-      } catch (err) {
-        toast.error('Failed to load campaigns');
-        console.error('Error fetching campaigns:', err);
-      } finally {
-        setIsLoading(false);
+
+  const fetchCampaigns = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/GetCampains`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch campaigns');
       }
-    };
+      const data: Campaign[] = await response.json();
+      const campaignsWithStats = data.map(campaign => ({
+        ...campaign,
+        stats: {
+          opened: Math.floor(Math.random() * 1000),
+          clicked: Math.floor(Math.random() * 100),
+          sent: 1000,
+          openRate: Math.random() * 100,
+          clickRate: Math.random() * 10,
+        },
+      }));
+      setCampaigns(campaignsWithStats);
+    } catch (err) {
+      toast.error('Failed to load campaigns');
+      console.error('Error fetching campaigns:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchCampaigns();
   }, []);
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [showCampaignForm, setShowCampaignForm] = useState(false); 
-  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null); 
-  const [activeTab, setActiveTab] = useState<'campaigns' | 'subscribers'>('campaigns'); // State for active tab
+  const [showCampaignForm, setShowCampaignForm] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'subscribers'>('campaigns');
 
-  // Get data and actions from stores
-  // const campaigns = useCampaignStore(selectAllCampaigns);
-  const addCampaign = useCampaignStore((state) => state.addCampaign); 
-  const updateCampaign = useCampaignStore((state) => state.updateCampaign); 
+  const addCampaign = useCampaignStore((state) => state.addCampaign);
+  const updateCampaign = useCampaignStore((state) => state.updateCampaign);
   const deleteCampaign = useCampaignStore((state) => state.deleteCampaign);
-  const subscriberCount = useSubscriberStore(selectSubscriberCount);
-  const subscribers = useSubscriberStore(selectAllSubscribers); 
-  const sendCampaign = useCampaignStore((state) => state.sendCampaign); 
 
-  // TODO: Calculate real average open/click rates from campaign stats
   const sentCampaigns = campaigns.filter(c => c.status === 'sent');
   const totalOpened = sentCampaigns.reduce((sum, c) => sum + (c.stats?.opened ?? 0), 0);
   const totalSent = sentCampaigns.reduce((sum, c) => sum + (c.stats?.sent ?? 0), 0);
   const totalClicked = sentCampaigns.reduce((sum, c) => sum + (c.stats?.clicked ?? 0), 0);
-  
-  const averageOpenRate = totalSent > 0 ? (totalOpened / totalSent) * 100 : 0; 
-  // Click rate can be based on opened or sent, let's use opened for now
-  const clickRate = totalOpened > 0 ? (totalClicked / totalOpened) * 100 : 0; 
 
-  // Filter campaigns based on search term (add type/status filters later)
-  const filteredCampaigns = campaigns.filter(campaign => 
+  const averageOpenRate = totalSent > 0 ? (totalOpened / totalSent) * 100 : 0;
+  const clickRate = totalOpened > 0 ? (totalClicked / totalOpened) * 100 : 0;
+
+  const filteredCampaigns = campaigns.filter(campaign =>
     campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     campaign.subject.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDelete = (campaignId: string, campaignName: string) => {
-    if (window.confirm(`Are you sure you want to delete the campaign "${campaignName}"?`)) {
-      deleteCampaign(campaignId);
+  const handleDelete = async (id: string, name: string) => {
+    if (window.confirm(`Are you sure you want to delete the "${name}" campaign?`)) {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/DeleteCampign?campaignId=${id}`,
+          {
+            method: 'DELETE',
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        toast.success(`Campaign "${name}" deleted successfully`);
+        fetchCampaigns();
+      } catch (err) {
+        toast.error('Failed to delete campaign');
+        console.error('Delete error:', err);
+      }
     }
   };
 
-  const handleSend = async (campaignId: string, campaignName: string) => {
-    if (subscribers.length === 0) {
-       toast.error("Cannot send campaign, no subscribers found.");
-       return;
+  const handleSendEmail = async (campaignId: string, campaignName: string) => {
+    if (allsubscribers.length === 0) {
+      toast.error("No subscribers found.");
+      return;
     }
-    if (window.confirm(`Are you sure you want to send the campaign "${campaignName}" to ${subscribers.length} subscribers?`)) {
-      // Consider adding a loading state for the send button
-      const success = await sendCampaign(campaignId, subscribers);
-      // Toast is handled in the store action
+
+    const emails = allsubscribers.map(sub => sub.email).filter(Boolean);
+
+    const confirmed = window.confirm(`Send email for all subscribers for "${campaignName}"?`);
+
+    if (confirmed) {
+      try {
+        const res = await axios.post(`${API_BASE_URL}/SendMessageToSubscribers`, {
+          campaignId: Number(campaignId),
+          all: true,
+          emails,
+        });
+        toast.success(`Campaign "${campaignName}" sent to all subscribers.`);
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to send campaign.');
+      }
     }
   };
 
-  // Handle form submission (passed to CampaignForm)
   const handleCampaignSubmit = async (data: CampaignFormData) => {
     if (editingCampaign) {
-      updateCampaign(editingCampaign.id, data); 
+      updateCampaign(editingCampaign.id, data);
       setEditingCampaign(null);
     } else {
-      addCampaign(8, data); 
-      fetchCampaigns()
+      addCampaign(8, data);
+      await fetchCampaigns();
     }
-    setShowCampaignForm(false); // Close the form
+    setShowCampaignForm(false);
   };
-  console.log('Campaigns:', campaigns); // Debugging line
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -140,63 +194,7 @@ export default function MarketingManagement() {
         )}
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-         <div className="bg-white overflow-hidden shadow rounded-lg">
-           <div className="p-5">
-             <div className="flex items-center">
-               <div className="flex-shrink-0">
-                 <Mail className="h-6 w-6 text-gray-400" />
-               </div>
-               <div className="ml-5 w-0 flex-1">
-                 <dl>
-                   <dt className="text-sm font-medium text-gray-500 truncate">Total Subscribers</dt>
-                   <dd className="flex items-baseline">
-                     <div className="text-2xl font-semibold text-gray-900">{statics?.subscribers}</div> 
-                   </dd>
-                 </dl>
-               </div>
-             </div>
-           </div>
-         </div>
-         <div className="bg-white overflow-hidden shadow rounded-lg">
-           <div className="p-5">
-             <div className="flex items-center">
-               <div className="flex-shrink-0">
-                 <MessageSquare className="h-6 w-6 text-gray-400" />
-               </div>
-               <div className="ml-5 w-0 flex-1">
-                 <dl>
-                   <dt className="text-sm font-medium text-gray-500 truncate">Average Open Rate</dt>
-                   <dd className="flex items-baseline">
-                     <div className="text-2xl font-semibold text-gray-900">{averageOpenRate.toFixed(1)}%</div> 
-                   </dd>
-                 </dl>
-               </div>
-             </div>
-           </div>
-         </div>
-         <div className="bg-white overflow-hidden shadow rounded-lg">
-           <div className="p-5">
-             <div className="flex items-center">
-               <div className="flex-shrink-0">
-                 <BarChart2 className="h-6 w-6 text-gray-400" />
-               </div>
-               <div className="ml-5 w-0 flex-1">
-                 <dl>
-                   <dt className="text-sm font-medium text-gray-500 truncate">Avg. Click Rate (Opened)</dt>
-                   <dd className="flex items-baseline">
-                     <div className="text-2xl font-semibold text-gray-900">{clickRate.toFixed(1)}%</div> 
-                   </dd>
-                 </dl>
-               </div>
-             </div>
-           </div>
-         </div>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
+     <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
           <button
             onClick={() => setActiveTab('campaigns')}
@@ -216,149 +214,68 @@ export default function MarketingManagement() {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            Subscribers ({subscriberCount})
+            Subscribers ({allsubscribers.length})
           </button>
         </nav>
       </div>
 
-      {/* Conditional Content based on Tab */}
       {activeTab === 'campaigns' && (
-        <div className="bg-white shadow rounded-lg border"> 
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div className="relative flex-1 max-w-lg">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search campaigns..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
+        <div className="bg-white shadow rounded-lg border">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <div className="relative flex-1 max-w-lg">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search campaigns..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <select className="rounded-lg border border-gray-200 text-sm h-10"> 
-                <option>All Types</option>
-                <option>Email</option>
-              </select>
-              <select className="rounded-lg border border-gray-200 text-sm h-10"> 
-                <option>All Status</option>
-                <option value="draft">Draft</option>
-                <option value="sent">Sent</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-          </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Sent / Sent To</th>
-                  <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredCampaigns.map((campaign) => (
-                  <tr key={campaign.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{campaign.name}</div>
-                      <div className="text-sm text-gray-500">{campaign.subject}</div> 
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        campaign.type === 'email' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {campaign.type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        campaign.status === 'sent' ? 'bg-green-100 text-green-800' : 
-                        campaign.status === 'draft' ? 'bg-yellow-100 text-yellow-800' : 
-                        'bg-gray-100 text-gray-800' 
-                      }`}>
-                        {campaign.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {campaign.status === 'sent' && campaign.stats ? (
-                        <div>
-                          <div className="text-sm text-gray-900">
-                            {campaign.stats.opened?.toLocaleString() ?? 0} opened ({campaign.stats.openRate?.toFixed(1) ?? 0}%)
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {campaign.stats.clicked?.toLocaleString() ?? 0} clicked ({campaign.stats.clickRate?.toFixed(1) ?? 0}%) 
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-500">{campaign.status === 'draft' ? 'Draft' : 'Not sent'}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {campaign.status === 'sent' && campaign.stats ? (
-                        <>
-                          <div>{campaign.sentAt ? new Date(campaign.sentAt).toLocaleDateString() : '-'}</div>
-                          <div className="text-xs text-gray-500">({campaign.stats.sent.toLocaleString()} subscribers)</div>
-                        </>
-                      ) : (
-                        'Not sent'
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-1"> 
-                        {campaign.status === 'draft' && (
-                           <Button 
-                             variant="outline" 
-                             size="sm" 
-                             className="text-green-600 hover:text-green-700"
-                             onClick={() => handleSend(campaign.id, campaign.name)}
-                             title="Send Campaign"
-                           >
-                             <Send className="h-4 w-4" />
-                           </Button>
-                        )}
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => { setEditingCampaign(campaign); setShowCampaignForm(true); }}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => handleDelete(campaign.id, campaign.name)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Campaign</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredCampaigns.map((campaign) => (
+                    <tr key={campaign.id}>
+                      <td className="px-6 py-4">{campaign.name}</td>
+                      <td className="px-6 py-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSendEmail(campaign.id, campaign.name)}
+                        >
+                          <Send className="h-4 w-4 mr-1" />
+                          Send Email
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
         </div>
       )}
 
       {activeTab === 'subscribers' && (
-         <SubscriberList />
+        <SubscriberList />
       )}
 
-      {/* Campaign Form Modal */}
       <CampaignForm
-        key={editingCampaign?.id || 'new'} 
+        key={editingCampaign?.id || 'new'}
         open={showCampaignForm}
         onClose={() => {
           setShowCampaignForm(false);
-          setEditingCampaign(null); 
+          setEditingCampaign(null);
         }}
         onSubmit={handleCampaignSubmit}
         initialData={editingCampaign}

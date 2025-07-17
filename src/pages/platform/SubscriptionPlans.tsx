@@ -7,8 +7,26 @@ import { SubscriptionPlanForm } from '@/components/platform/forms/SubscriptionPl
 import { useSubscriptionPlanStore, selectAllPlans } from '@/lib/store/subscriptionPlans';
 import { useThemeStore } from '@/lib/theme'; // Import theme store
 import { EditSub } from '@/components/platform/forms/EditSub';
-
+import { jwtDecode } from 'jwt-decode';
+import Cookies from 'js-cookie';
+import { useNavigate } from 'react-router-dom';
+interface MyJwtPayload {
+      Id?: string;
+      Role?: string;
+      [key: string]: any;
+    }
 function SubscriptionPlans() {
+
+      const navigate = useNavigate()
+      const token = Cookies.get('salonUser');
+      const decoded: MyJwtPayload | undefined = token ? jwtDecode<MyJwtPayload>(token) : undefined;
+  
+      useEffect(() => {
+        if (!decoded?.Id || (decoded?.Role !== "SuperAdmin" && decoded?.Role !== "Admin")) {
+          navigate('/login')
+        }
+      },[])
+      
   const [showNewPlan, setShowNewPlan] = useState(false);
   const [showEditPlan, setShowEditPlan] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
