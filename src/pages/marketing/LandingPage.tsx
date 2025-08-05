@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form'; // Import useForm
 import { z } from 'zod'; // Import Zod
@@ -130,7 +130,11 @@ const subscriptionSchema = z.object({
   name: z.string().optional(), // Optional name field
 });
 type SubscriptionFormData = z.infer<typeof subscriptionSchema>;
-
+type colorsPalletType = { 
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+}
 export default function LandingPage() {
   const {
     marketingButtonTextColor,
@@ -197,6 +201,29 @@ export default function LandingPage() {
       }
     }
   };
+
+  const [colorsPallet, setCollorsPallet] = React.useState<colorsPalletType>(null)
+
+  const getColorsPallet = async () => {
+    try{
+      const res = await axios.get('https://kapperking.runasp.net/api/SuperAdmin/GetColorPalette');
+      setCollorsPallet(res.data);
+      console.log("Colors pallet fetched:", res.data);
+    }catch(erorr) {
+      console.error("Error fetching colors pallet:", erorr);
+      // Handle error, maybe set default colors or show a message
+      // setCollorsPallet({
+      //   primary: '#6B46C1',
+      //   secondary: '#2D3748',
+      //   accent: '#F6E05E'
+      // });
+    } 
+  }
+
+  useEffect(() => {
+    getColorsPallet()
+  },[])
+
   // const { theme } = useTheme(); // No longer needed
   return (
     <div className="bg-gradient-to-br from-gray-50 to-gray-100">
@@ -206,9 +233,10 @@ export default function LandingPage() {
       <div
         className="relative overflow-hidden bg-cover bg-center" // Added overflow-hidden
         style={{
-          backgroundColor: marketingHeaderBgType === 'color' ? (marketingHeaderBgColor || '#6B46C1') : undefined, // Use primary as fallback color
-          backgroundImage: marketingHeaderBgType === 'image' && marketingHeaderBgImageUrl ? `url(${marketingHeaderBgImageUrl})` : undefined,
-          color: marketingHeaderTextColor || '#FFFFFF',
+          // backgroundColor: marketingHeaderBgType === 'color' ? (marketingHeaderBgColor || '#6B46C1') : undefined, // Use primary as fallback color
+          // backgroundImage: marketingHeaderBgType === 'image' && marketingHeaderBgImageUrl ? `url(${marketingHeaderBgImageUrl})` : undefined,
+          // color: marketingHeaderTextColor || '#FFFFFF',
+          backgroundColor: colorsPallet?.primaryColor || '#6B46C1', // Use primary color as fallback
         }}
       >
          {/* Optional overlay for image background */}
@@ -386,7 +414,7 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       {/* Use bg-primary */}
-      <div className="relative py-16 sm:py-24 lg:py-32 bg-primary">
+      <div className="relative py-16 sm:py-24 lg:py-32 " style={{ backgroundColor: colorsPallet?.primaryColor || '#6B46C1' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           {/* Apply font-heading */}
           <h2 className="text-3xl font-extrabold text-white sm:text-4xl font-heading">

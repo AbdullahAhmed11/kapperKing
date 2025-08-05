@@ -50,6 +50,8 @@ function PlatformSidebar({ isCollapsed, toggleSidebar }: PlatformSidebarProps) {
   }
   interface ColorPalette {
     dashboardSidebarBG?: string;
+    dashboardSidebarText?: string;
+    dashboardButtonText?: string;
   }
   const [branding, setBranding] = useState<Branding | null>(null)
   const [colorPalette, setColorPalette] = useState<ColorPalette | null>(null);
@@ -67,6 +69,7 @@ function PlatformSidebar({ isCollapsed, toggleSidebar }: PlatformSidebarProps) {
     try {
       const response =  await axios.get(`https://kapperking.runasp.net/api/SuperAdmin/GetColorPalette`)
       setColorPalette(response.data);
+      console.log(response.data);
     }catch (error) {
       console.error('Error fetching color palette:', error);
     }
@@ -149,7 +152,7 @@ function PlatformSidebar({ isCollapsed, toggleSidebar }: PlatformSidebarProps) {
                       ${isActive ? 'text-white' : 'group-hover:text-white'}
                     `}
                   />
-                  {!isCollapsed && <span style={!isActive ? { color: dashboardSidebarTextColor || '#D1D5DB' } : {}}>{item.name}</span>} {/* Apply color to text */}
+                  {!isCollapsed && <span style={!isActive ? { color: colorPalette?.dashboardSidebarText || '#D1D5DB' } : {}}>{item.name}</span>} 
                 </Link>
               );
             })}

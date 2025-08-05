@@ -294,13 +294,13 @@ const handleEditClick = async (salonId: number) => {
                     <Settings className="h-4 w-4 mr-1" />
                     <span>{salon.planName || 'No Plan'}</span> 
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  {/* <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     subscriptionStatus === 'active' || subscriptionStatus === 'trialing' ? 'bg-green-100 text-green-800' : 
                     subscriptionStatus === 'past_due' ? 'bg-yellow-100 text-yellow-800' : 
                     'bg-red-100 text-red-800' // canceled, incomplete or unknown
                   }`}>
                     {subscriptionStatus}
-                  </span>
+                  </span> */}
                 </div>
               </div>
             </div>

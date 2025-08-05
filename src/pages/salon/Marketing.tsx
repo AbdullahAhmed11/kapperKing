@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Mail, MessageSquare, Users, ArrowUpRight, Edit2, Trash2, Send, Loader2, AlertCircle } from 'lucide-react'; // Added icons
+import { Plus, Search, Mail, MessageSquare, Users, ArrowUpRight, Edit2, Trash2, Send, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge'; // Import Badge
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"; // Import Table
-import { useCampaignStore, Campaign, CampaignFormData } from '@/lib/store/campaigns'; // Import store and types
-import { useCurrentSalonStore } from '@/lib/store/currentSalon'; // Import salon store
-import { SalonCampaignForm } from '@/components/salon/forms/SalonCampaignForm'; // Import the new form
-import { format } from 'date-fns'; // Import format
-import { toast } from 'sonner'; // Import toast
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useCampaignStore, Campaign, CampaignFormData } from '@/lib/store/campaigns';
+import { useCurrentSalonStore } from '@/lib/store/currentSalon';
+import { SalonCampaignForm } from '@/components/salon/forms/SalonCampaignForm';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 import { jwtDecode } from 'jwt-decode';
-import Cookies from 'js-cookie'; 
+import Cookies from 'js-cookie';
 
 interface Campaign {
   id: number;
@@ -22,14 +23,15 @@ interface Campaign {
   status: string;
   sentAt: string;
 }
+
 type JwtPayload = {
-  Id: number; // adjust this to match your token's structure
+  Id: number;
   email?: string;
   name?: string;
   FirstName?: string;
   LastName?: string;
-  // any other fields you expect
 };
+
 function Marketing() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,10 +40,13 @@ function Marketing() {
   const [showCampaignForm, setShowCampaignForm] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [sendingCampaignId, setSendingCampaignId] = useState<number | null>(null);
- const token = Cookies.get('salonUser');
-  
+  const [showSendToAllDialog, setShowSendToAllDialog] = useState(false);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
+  const [isSendingToAll, setIsSendingToAll] = useState(false);
+
+  const token = Cookies.get('salonUser');
   const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
- 
+
   // Fetch campaigns from API
   useEffect(() => {
     const fetchCampaigns = async () => {
@@ -76,154 +81,98 @@ function Marketing() {
     setShowCampaignForm(true);
   };
 
-  // const handleDelete = async (campaign: Campaign) => {
-  //   if (window.confirm(`Are you sure you want to delete the "${campaign.name}" campaign?`)) {
-  //     try {
-  //       // Add your delete API call here
-  //       toast.success(`Campaign "${campaign.name}" deleted`);
-  //       setCampaigns(campaigns.filter(c => c.id !== campaign.id));
-  //     } catch (err) {
-  //       toast.error('Failed to delete campaign');
-  //     }
-  //   }
-  // };
-const handleDelete = async (campaign: Campaign) => {
-  if (window.confirm(`Are you sure you want to delete the "${campaign.name}" campaign?`)) {
-    try {
-      const response = await fetch(`https://kapperking.runasp.net/api/Salons/DeleteSalonCampign?campaignId=${campaign.id}`, {
-        method: 'DELETE',
-      });
+  const handleDelete = async (campaign: Campaign) => {
+    if (window.confirm(`Are you sure you want to delete the "${campaign.name}" campaign?`)) {
+      try {
+        const response = await fetch(`https://kapperking.runasp.net/api/Salons/DeleteSalonCampign?campaignId=${campaign.id}`, {
+          method: 'DELETE',
+        });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        toast.success(`Campaign "${campaign.name}" deleted`);
+        setCampaigns(campaigns.filter(c => c.id !== campaign.id));
+      } catch (err) {
+        toast.error('Failed to delete campaign');
+        console.error(err);
+      }
+    }
+  };
+
+  const handleFormSubmit = async (data: CampaignFormData) => {
+    try {
+      const token = Cookies.get('salonUser');
+      const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
+      const salonId = decoded?.Id;
+
+      if (!salonId) {
+        toast.error('Invalid salon session');
+        return;
       }
 
-      toast.success(`Campaign "${campaign.name}" deleted`);
-      setCampaigns(campaigns.filter(c => c.id !== campaign.id));
+      if (editingCampaign) {
+        const payload = {
+          salonId,
+          campaignId: editingCampaign.id,
+          name: data.name,
+          body: data.content,
+          email: data.subject,
+          isHtml: true
+        };
+
+        const response = await fetch('https://kapperking.runasp.net/api/Salons/EditSalonCampaign', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        toast.success('Campaign updated successfully');
+      } else {
+        const payload = {
+          name: data.name,
+          body: data.content,
+          email: data.subject,
+          isHtml: true,
+          type: "Email",
+          status: "Sent",
+          toAll: data.target_type === 'all_clients',
+          emails: data.target_type === 'specific_clients' ? data.selectedClientIds : [],
+          salonId
+        };
+
+        const response = await fetch('https://kapperking.runasp.net/api/Salons/AddSalonCampain', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        toast.success('Campaign created successfully');
+      }
+
+      setShowCampaignForm(false);
+
+      const refreshed = await fetch(`https://kapperking.runasp.net/api/Salons/GetSalonCampaings?salonId=${salonId}`);
+      const newCampaigns = await refreshed.json();
+      setCampaigns(newCampaigns);
     } catch (err) {
-      toast.error('Failed to delete campaign');
+      toast.error('Failed to submit campaign');
       console.error(err);
     }
-  }
-};
-
-//   const handleFormSubmit = async (data: CampaignFormData) => {
-//   try {
-//     const token = Cookies.get('salonUser');
-//     const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
-//     const salonId = decoded?.Id;
-
-//     const payload = {
-//       name: data.name,
-//       body: data.content,
-//       email: data.subject, // or another field if this is not correct
-//       isHtml: true,
-//       type: "Email",
-//       status: "Sent",
-//       toAll: data.target_type === 'all_clients',
-//       emails: data.target_type === 'specific_clients' ? data.selectedClientIds : [],
-//       salonId: salonId
-//     };
-
-//     const response = await fetch('https://kapperking.runasp.net/api/Salons/AddSalonCampain', {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify(payload)
-//     });
-
-//     if (!response.ok) {
-//       throw new Error(`HTTP error! status: ${response.status}`);
-//     }
-
-//     toast.success('Campaign created successfully');
-//     setShowCampaignForm(false);
-    
-//     // Refetch the campaigns after creation
-//     const refreshed = await fetch(`https://kapperking.runasp.net/api/Salons/GetSalonCampaings?salonId=${salonId}`);
-//     const newCampaigns = await refreshed.json();
-//     setCampaigns(newCampaigns);
-//   } catch (err) {
-//     toast.error('Failed to create campaign');
-//     console.error(err);
-//   }
-// };
-const handleFormSubmit = async (data: CampaignFormData) => {
-  try {
-    const token = Cookies.get('salonUser');
-    const decoded = token ? jwtDecode<JwtPayload>(token) : undefined;
-    const salonId = decoded?.Id;
-
-    if (!salonId) {
-      toast.error('Invalid salon session');
-      return;
-    }
-
-    // If editing
-    if (editingCampaign) {
-      const payload = {
-        salonId,
-        campaignId: editingCampaign.id,
-        name: data.name,
-        body: data.content,
-        email: data.subject,
-        isHtml: true
-      };
-
-      const response = await fetch('https://kapperking.runasp.net/api/Salons/EditSalonCampaign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      toast.success('Campaign updated successfully');
-    } else {
-      // Create new campaign
-      const payload = {
-        name: data.name,
-        body: data.content,
-        email: data.subject,
-        isHtml: true,
-        type: "Email",
-        status: "Sent",
-        toAll: data.target_type === 'all_clients',
-        emails: data.target_type === 'specific_clients' ? data.selectedClientIds : [],
-        salonId
-      };
-
-      const response = await fetch('https://kapperking.runasp.net/api/Salons/AddSalonCampain', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      toast.success('Campaign created successfully');
-    }
-
-    setShowCampaignForm(false);
-
-    // Refetch updated campaigns list
-    const refreshed = await fetch(`https://kapperking.runasp.net/api/Salons/GetSalonCampaings?salonId=${salonId}`);
-    const newCampaigns = await refreshed.json();
-    setCampaigns(newCampaigns);
-  } catch (err) {
-    toast.error('Failed to submit campaign');
-    console.error(err);
-  }
-};
+  };
 
   const handleSend = async (campaign: Campaign) => {
     if (campaign.status !== 'Draft') {
@@ -234,16 +183,68 @@ const handleFormSubmit = async (data: CampaignFormData) => {
     if (window.confirm(`Are you sure you want to send the "${campaign.name}" campaign?`)) {
       setSendingCampaignId(campaign.id);
       try {
-        // Add your send API call here
+        const response = await fetch(`https://kapperking.runasp.net/api/Salons/SendCampaign?campaignId=${campaign.id}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         toast.success(`Campaign "${campaign.name}" sent successfully`);
-        // Update local state to reflect sent status
         setCampaigns(campaigns.map(c => 
           c.id === campaign.id ? { ...c, status: 'Sent', sentAt: new Date().toISOString() } : c
         ));
       } catch (err) {
         toast.error('Failed to send campaign');
+        console.error(err);
       } finally {
         setSendingCampaignId(null);
+      }
+    }
+  };
+
+  const handleSendToAllClients = async () => {
+    if (!selectedCampaignId) {
+      toast.error('Please select a campaign to send');
+      return;
+    }
+
+    if (window.confirm('Are you sure you want to send this campaign to all clients?')) {
+      setIsSendingToAll(true);
+      try {
+        const response = await fetch('https://kapperking.runasp.net/api/Salons/SendMessageToClients', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            campaignId: selectedCampaignId,
+            all: true,
+            emails: []
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        toast.success('Message sent to all clients successfully');
+        setShowSendToAllDialog(false);
+        setSelectedCampaignId(null);
+
+        // Refresh campaigns
+        const refreshed = await fetch(`https://kapperking.runasp.net/api/Salons/GetSalonCampaings?salonId=${decoded?.Id}`);
+        const newCampaigns = await refreshed.json();
+        setCampaigns(newCampaigns);
+      } catch (err) {
+        toast.error('Failed to send message to all clients');
+        console.error(err);
+      } finally {
+        setIsSendingToAll(false);
       }
     }
   };
@@ -253,7 +254,6 @@ const handleFormSubmit = async (data: CampaignFormData) => {
     c.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Calculate stats
   const totalSubscribers = 0; // You would fetch this from another endpoint
   const activeCampaigns = campaigns.filter(c => c.status === 'Sending' || c.status === 'Scheduled').length;
 
@@ -264,33 +264,23 @@ const handleFormSubmit = async (data: CampaignFormData) => {
   if (error) {
     return <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700">Error loading marketing data: {error}</div>;
   }
+
   return (
     <div className="space-y-6">
-  <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-900">Marketing</h1>
-        <Button onClick={handleAddNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Campaign
-        </Button>
+        <div className="flex space-x-2">
+          <Button onClick={handleAddNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Campaign
+          </Button>
+          <Button onClick={() => setShowSendToAllDialog(true)}>
+            <Send className="h-4 w-4 mr-2" />
+            Send to All Clients
+          </Button>
+        </div>
       </div>
 
-      {/* Marketing Stats */}
-      {/* <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-6">
-        <div className="bg-white overflow-hidden shadow rounded-lg p-5">
-          <dt className="text-sm font-medium text-gray-500 truncate flex items-center">
-            <Mail className="h-5 w-5 mr-2"/>Total Subscribers
-          </dt>
-          <dd className="mt-1 text-3xl font-semibold text-gray-900">{totalSubscribers}</dd>
-        </div>
-        <div className="bg-white overflow-hidden shadow rounded-lg p-5">
-          <dt className="text-sm font-medium text-gray-500 truncate flex items-center">
-            <MessageSquare className="h-5 w-5 mr-2"/>Active Campaigns
-          </dt>
-          <dd className="mt-1 text-3xl font-semibold text-gray-900">{activeCampaigns}</dd>
-        </div>
-      </div> */}
-
-      {/* Campaigns List */}
       <div className="bg-white shadow rounded-lg">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -372,7 +362,7 @@ const handleFormSubmit = async (data: CampaignFormData) => {
                           <Edit2 className="h-4 w-4"/>
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleSend(campaign)} disabled={isSending || !canSend} title={canSend ? "Send" : `Cannot send (status: ${campaign.status})`}>
-                          {/* {isSending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4"/>} */}
+                          <Send className="h-4 w-4"/>
                         </Button>
                         <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(campaign)} disabled={isSending} title="Delete">
                           <Trash2 className="h-4 w-4"/>
@@ -388,23 +378,84 @@ const handleFormSubmit = async (data: CampaignFormData) => {
       </div>
 
       <SalonCampaignForm
-         salonId={decoded?.Id ? String(decoded.Id) : ''}
-         open={showCampaignForm}
-         onClose={() => setShowCampaignForm(false)}
-         onSubmit={handleFormSubmit}
-         initialData={
-           editingCampaign
-             ? {
-                 ...editingCampaign,
-                 salon_id: decoded?.Id ?? '', // or the correct salon id
-                 content: editingCampaign.body,
-                 target_type: 'all_clients', // or map appropriately
-                 created_at: editingCampaign.sentAt || new Date().toISOString(),
-                 updated_at: new Date().toISOString(),
-               }
-             : null
-         }
+        salonId={decoded?.Id ? String(decoded.Id) : ''}
+        open={showCampaignForm}
+        onClose={() => setShowCampaignForm(false)}
+        onSubmit={handleFormSubmit}
+        initialData={
+          editingCampaign
+            ? {
+                ...editingCampaign,
+                salon_id: decoded?.Id ?? '',
+                content: editingCampaign.body,
+                target_type: 'all_clients',
+                created_at: editingCampaign.sentAt || new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              }
+            : null
+        }
       />
+
+      {/* Send to All Clients Dialog */}
+      <Dialog open={showSendToAllDialog} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedCampaignId(null);
+        }
+        setShowSendToAllDialog(open);
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Send Message to All Clients</DialogTitle>
+            <DialogDescription>
+              Select a campaign to send to all clients.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="campaignSelect" className="text-sm font-medium leading-none">
+                Campaign
+              </label>
+              <select
+                id="campaignSelect"
+                className="w-full rounded-md border border-gray-300 p-2 mt-1"
+                value={selectedCampaignId ?? ''}
+                onChange={(e) => setSelectedCampaignId(Number(e.target.value))}
+              >
+                <option value="" disabled>Select a campaign</option>
+                {campaigns.map((campaign) => (
+                  <option key={campaign.id} value={campaign.id}>
+                    {campaign.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowSendToAllDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendToAllClients}
+              disabled={isSendingToAll || !selectedCampaignId}
+            >
+              {isSendingToAll ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send to All
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

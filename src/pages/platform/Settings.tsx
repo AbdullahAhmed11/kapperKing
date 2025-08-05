@@ -185,7 +185,7 @@ export default function PlatformSettings() {
                      <Label htmlFor="emailSettings.fromEmail">From Email</Label>
                      <Input id="emailSettings.fromEmail" type="email" {...register('emailSettings.fromEmail')} className="mt-1 h-10" />
                    </div>
-                   <div className="sm:col-span-3">
+                   {/* <div className="sm:col-span-3">
                      <Label htmlFor="emailSettings.smtpHost">SMTP Host</Label>
                      <Input id="emailSettings.smtpHost" {...register('emailSettings.smtpHost')} className="mt-1 h-10" />
                    </div>
@@ -200,7 +200,7 @@ export default function PlatformSettings() {
                    <div className="sm:col-span-3">
                      <Label htmlFor="emailSettings.smtpPassword">SMTP Password</Label>
                      <Input id="emailSettings.smtpPassword" type="password" {...register('emailSettings.smtpPassword')} className="mt-1 h-10" placeholder="Enter new password or leave blank" />
-                   </div>
+                   </div> */}
                  </div>
                </CardContent>
              </Card>
@@ -220,10 +220,10 @@ export default function PlatformSettings() {
                      <Label htmlFor="security.passwordMinLength">Minimum Password Length</Label>
                      <Input id="security.passwordMinLength" type="number" {...register('security.passwordMinLength', { valueAsNumber: true })} className="mt-1 h-10" />
                    </div>
-                   <div className="sm:col-span-2">
+                   {/* <div className="sm:col-span-2">
                      <Label htmlFor="security.sessionTimeout">Session Timeout (minutes)</Label>
                      <Input id="security.sessionTimeout" type="number" {...register('security.sessionTimeout', { valueAsNumber: true })} className="mt-1 h-10" />
-                   </div>
+                   </div> */}
                    <div className="sm:col-span-2">
                      <Label htmlFor="security.maxLoginAttempts">Max Login Attempts</Label>
                      <Input id="security.maxLoginAttempts" type="number" {...register('security.maxLoginAttempts', { valueAsNumber: true })} className="mt-1 h-10" />

@@ -603,6 +603,8 @@ const step1Schema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   phoneNumber: z.string().optional(),
+  
+
 });
 
 const step2Schema = z.object({
@@ -615,6 +617,10 @@ const step2Schema = z.object({
   website: z.string().url().or(z.literal('')).optional(),
   email: z.string().email('Email required'),
   password: z.string().min(6, 'Password required'),
+  imageFile: z
+  .any()
+  .refine((file) => file instanceof File, { message: "Image file is required" })
+  .optional()
 });
 
 const SignUpPage = () => {
@@ -622,6 +628,7 @@ const SignUpPage = () => {
   const { planId, priceId } = useParams();
   const selectedPlan = useSubscriptionPlanStore(state => selectPlanById(state, planId || ''));
   const planName = selectedPlan?.name || 'Selected';
+const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [step1Data, setStep1Data] = useState(null);
@@ -670,6 +677,10 @@ const SignUpPage = () => {
       formData.append("Salon.Latitude", "0");
       formData.append("Salon.Longitude", "0");
       formData.append("Salon.Website", step2Data.website || "");
+      if (imageFile) {
+  formData.append("Salon.ImageFile", imageFile);
+}
+
       formData.append("Salon.PlanId", planId || '');
       formData.append("Salon.SubscriptionType", "monthly");
 
@@ -766,10 +777,25 @@ const SignUpPage = () => {
               <Label>Password</Label>
               <Input type="password" {...formStep2.register('password')} />
             </div>
+                        <div>
+  <Label htmlFor="image">Salon Logo (Optional)</Label>
+  <Input
+    id="image"
+    type="file"
+    accept="image/*"
+    onChange={(e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        setImageFile(e.target.files[0]);
+      }
+    }}
+  />
+</div>
             <div className="flex justify-between">
               <Button type="button" onClick={prevStep}>Back</Button>
               <Button type="submit">Next</Button>
             </div>
+
+
           </form>
         )}
 

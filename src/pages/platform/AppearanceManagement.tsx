@@ -157,36 +157,35 @@ export default function AppearanceManagement() {
   const dashboardLogoInputRef = useRef<HTMLInputElement>(null);
   const marketingHeaderImageInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [brandingResponse, paletteResponse, headerResponse] = await Promise.all([
-          fetch('https://kapperking.runasp.net/api/SuperAdmin/GetBranding'),
-          fetch('https://kapperking.runasp.net/api/SuperAdmin/GetColorPalette'),
-          fetch('https://kapperking.runasp.net/api/SuperAdmin/GetMarketingPageHeader')
-        ]);
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const [brandingResponse, paletteResponse, headerResponse] = await Promise.all([
+        fetch('https://kapperking.runasp.net/api/SuperAdmin/GetBranding'),
+        fetch('https://kapperking.runasp.net/api/SuperAdmin/GetColorPalette'),
+        fetch('https://kapperking.runasp.net/api/SuperAdmin/GetMarketingPageHeader')
+      ]);
 
-        if (!brandingResponse.ok || !paletteResponse.ok || !headerResponse.ok) {
-          throw new Error('Failed to fetch data');
-        }
-
-        const brandingData = await brandingResponse.json();
-        const paletteData = await paletteResponse.json();
-        const headerData = await headerResponse.json();
-
-        setBranding(brandingData);
-        setColorPalette(paletteData);
-        setMarketingHeader(headerData);
-
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error('Failed to load settings');
-      } finally {
-        setIsLoading(false);
+      if (!brandingResponse.ok || !paletteResponse.ok || !headerResponse.ok) {
+        throw new Error('Failed to fetch data');
       }
-    };
 
+      const brandingData = await brandingResponse.json();
+      const paletteData = await paletteResponse.json();
+      const headerData = await headerResponse.json();
+
+      setBranding(brandingData);
+      setColorPalette(paletteData);
+      setMarketingHeader(headerData);
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error('Failed to load settings');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -339,6 +338,8 @@ export default function AppearanceManagement() {
       }
 
       toast.success("All settings saved successfully!");
+
+ fetchData();
     } catch (error) {
       console.error('Error saving settings:', error);
       toast.error('Failed to save settings');
@@ -367,7 +368,7 @@ const handleSaveColorPalette = async () => {
     if (!response.ok) {
       throw new Error('Failed to save color palette');
     }
-
+  await fetchData();
     toast.success("Color palette saved successfully!");
   } catch (error) {
     console.error('Error saving color palette:', error);
@@ -632,7 +633,7 @@ const handleSaveColorPalette = async () => {
       onChange={handleColorPaletteChange as (property: string, value: string) => void} 
       disabled={!!isUploading} 
     />
-    <ColorInputGroup 
+    {/* <ColorInputGroup 
       label="Accent Color" 
       id="accentColor" 
       value={colorPalette.accentColor} 
@@ -652,7 +653,7 @@ const handleSaveColorPalette = async () => {
       value={colorPalette.marketingBodyText} 
       onChange={handleColorPaletteChange as (property: string, value: string) => void} 
       disabled={!!isUploading} 
-    />
+    /> */}
     <ColorInputGroup 
       label="Dashboard Sidebar BG" 
       id="dashboardSidebarBG" 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Search, Edit2, Trash2, Calendar, Mail, Phone, Loader2, AlertCircle, X, User } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Calendar, Mail, Phone, Loader2, AlertCircle, X, User, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -16,7 +16,7 @@ interface StaffMember {
   phone: string;
   role: string;
   imageUrl?: string;
-  imagePath?:string;
+  imagePath?: string;
 }
 
 interface NewStylistFormData {
@@ -26,6 +26,16 @@ interface NewStylistFormData {
   password: string;
   phone: string;
   imageFile?: File | null;
+}
+
+interface Appointment {
+  id: number;
+  salonName: string;
+  time: string;
+  amount: number;
+  customerName: string;
+  services: string;
+  isDone: boolean;
 }
 
 type JwtPayload = {
@@ -44,7 +54,11 @@ function Staff() {
   const [error, setError] = useState<string | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [showAvailability, setShowAvailability] = useState(false);
-  
+  const [showAppointmentsDialog, setShowAppointmentsDialog] = useState(false);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+  const [appointmentsError, setAppointmentsError] = useState<string | null>(null);
+
   // Add Stylist Dialog State
   const [showAddStylistDialog, setShowAddStylistDialog] = useState(false);
   const [isAddingStylist, setIsAddingStylist] = useState(false);
@@ -91,6 +105,21 @@ function Staff() {
     }
   };
 
+  const getStylistAppointments = async (stylistId: string) => {
+    try {
+      setAppointmentsLoading(true);
+      setAppointmentsError(null);
+      const response = await axios.get(`https://kapperking.runasp.net/api/Appointments/GetStylistAppointments/${stylistId}?year=0&month=0&day=0&dayOfWeek=Sunday`);
+      setAppointments(response.data);
+    } catch (err) {
+      setAppointmentsError('Failed to load appointments');
+      console.error('Error fetching appointments:', err);
+      toast.error('Failed to load appointments');
+    } finally {
+      setAppointmentsLoading(false);
+    }
+  };
+
   useEffect(() => {
     getStylists();
   }, []);
@@ -128,6 +157,13 @@ function Staff() {
     e.stopPropagation();
     setSelectedStaff(staffMember);
     setShowAvailability(true);
+  };
+
+  const handleAppointmentsClick = (staffMember: StaffMember, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedStaff(staffMember);
+    setShowAppointmentsDialog(true);
+    getStylistAppointments(staffMember.id);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
@@ -209,13 +245,11 @@ function Staff() {
       getStylists();
     } catch (error) {
       console.error('Error adding stylist:', error);
-      // Check if error is an AxiosError and get the response message
       if (axios.isAxiosError(error)) {
         toast.error(error.response?.data);
       } else {
         toast.error('Error adding stylist');
       }
-      
     } finally {
       setIsAddingStylist(false);
     }
@@ -253,11 +287,10 @@ function Staff() {
       getStylists();
     } catch (error) {
       console.error('Error updating staff:', error);
-      // toast.error('Failed to update staff. Please try again.');
-          if (axios.isAxiosError(error)) {
+      if (axios.isAxiosError(error)) {
         toast.error(error.response?.data);
       } else {
-        toast.error('Error adding stylist');
+        toast.error('Error updating staff');
       }
     } finally {
       setIsEditingStaff(false);
@@ -361,6 +394,13 @@ function Staff() {
                       <Button 
                         variant="outline" 
                         size="sm" 
+                        onClick={(e) => handleAppointmentsClick(staffMember, e)}
+                      >
+                        <Clock className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
                         onClick={(e) => handleAvailabilityClick(staffMember, e)}
                       >
                         <Calendar className="h-4 w-4" />
@@ -414,7 +454,6 @@ function Staff() {
           </DialogHeader>
           
           <form onSubmit={handleAddStylistSubmit} className="space-y-4">
-            {/* Image Upload */}
             <div className="flex flex-col items-center space-y-2">
               <div className="h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
                 {previewImage ? (
@@ -561,7 +600,6 @@ function Staff() {
           </DialogHeader>
           
           <form onSubmit={handleEditStaffSubmit} className="space-y-4">
-            {/* Image Upload */}
             <div className="flex flex-col items-center space-y-2">
               <div className="h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
                 {previewImage ? (
@@ -686,6 +724,70 @@ function Staff() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Appointments Dialog */}
+      <Dialog open={showAppointmentsDialog} onOpenChange={(open) => {
+        if (!open) {
+          setAppointments([]);
+          setAppointmentsError(null);
+        }
+        setShowAppointmentsDialog(open);
+      }}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Appointments for {selectedStaff?.firstName} {selectedStaff?.lastName}</DialogTitle>
+            <DialogDescription>
+              View all appointments for this stylist.
+            </DialogDescription>
+            <button 
+              onClick={() => setShowAppointmentsDialog(false)} 
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </DialogHeader>
+
+          {appointmentsLoading ? (
+            <div className="flex justify-center items-center p-6">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : appointmentsError ? (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
+              {appointmentsError}
+            </div>
+          ) : appointments.length === 0 ? (
+            <div className="text-center py-6 text-gray-500">
+              No appointments found for this stylist.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {appointments.map((appointment) => (
+                <div key={appointment.id} className="border border-gray-100 p-4 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900">
+                        {appointment.customerName}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        Service: {appointment.services}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Time: {appointment.time}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Amount: ${appointment.amount}
+                      </p>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Status: {appointment.isDone ? 'Completed' : 'Pending'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

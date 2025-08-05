@@ -366,7 +366,7 @@ const [salonData, setSalonData] = useState<SalonData | null>(null);
                   <div className="mt-2">
                     <p className="text-sm text-gray-500">Current Image:</p>
                     <img 
-                      src={salonData.image} 
+                      src={`https://kapperking.runasp.net${salonData.image}`} 
                       alt="Salon" 
                       className="mt-1 h-32 w-32 object-cover rounded"
                     />

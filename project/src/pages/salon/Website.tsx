@@ -67,7 +67,7 @@ export default function Website() {
     { id: 'theme', label: 'Theme', icon: Palette },
     { id: 'layout', label: 'Layout', icon: Layout },
     { id: 'settings', label: 'Settings', icon: Settings },
-    { id: 'custom', label: 'Custom Code', icon: Code },
+    // { id: 'custom', label: 'Custom Code', icon: Code },
     { id: 'social', label: 'Social', icon: Share2 }
   ];
 
@@ -353,31 +353,7 @@ export default function Website() {
           </div>
         )}
 
-        {activeTab === 'custom' && (
-          <div className="p-6 space-y-6">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">Custom CSS</h3>
-              <textarea
-                value={website.customCss}
-                onChange={(e) => updateCustomCode(currentSalon!.id, e.target.value, website.customScripts)}
-                rows={10}
-                className="mt-4 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
-                placeholder="/* Add your custom CSS here */"
-              />
-            </div>
-
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">Custom JavaScript</h3>
-              <textarea
-                value={website.customScripts}
-                onChange={(e) => updateCustomCode(currentSalon!.id, website.customCss, e.target.value)}
-                rows={10}
-                className="mt-4 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
-                placeholder="// Add your custom JavaScript here"
-              />
-            </div>
-          </div>
-        )}
+     
 
         {activeTab === 'social' && (
           <div className="p-6 space-y-6">

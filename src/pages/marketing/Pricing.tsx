@@ -178,8 +178,13 @@ export default function Pricing() {
   Start Free Trial
 </Link>
                 <p className="mt-8">
-                  <span className="text-4xl font-extrabold text-gray-900">€{tier.price}</span>
-                  <span className="text-base font-medium text-gray-500">/mo</span>
+                  {/* <span className="text-4xl font-extrabold text-gray-900">€{tier.price}</span> */}
+                  {/* <span className="text-base font-medium text-gray-500">/mo</span> */}
+                  <p className="mt-8">
+  <span className="text-4xl font-extrabold text-gray-900">€{tier.price}</span>
+  <span className="text-base font-medium text-gray-500">/{isAnnual ? 'yr' : 'mo'}</span>
+</p>
+
                 </p>
               </div>
               <div className="pt-6 pb-8 px-6">

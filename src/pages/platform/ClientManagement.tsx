@@ -357,13 +357,13 @@ const getOwners = async () => {
                     <CreditCard className="h-4 w-4 mr-1.5" /> 
                     <span>{client?.planName || 'No Plan'}</span> 
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                  {/* <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                     subscriptionStatus === 'active' || subscriptionStatus === 'trialing' ? 'bg-green-100 text-green-800' : 
                     subscriptionStatus === 'past_due' ? 'bg-yellow-100 text-yellow-800' : 
                     'bg-red-100 text-red-800' 
                   }`}>
                     {subscriptionStatus}
-                  </span>
+                  </span> */}
                 </div>
                  {subscriptionStatus === 'trialing' && client.trialEndsAt && (
                     <div className="text-xs text-gray-400 mt-1 text-right">
