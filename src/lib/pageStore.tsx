@@ -196,7 +196,7 @@ export const usePageStore = create<PageStoreState>((set, get) => ({
     set({ loading: true });
     try {
       const response = await fetch('https://kapperking.runasp.net/api/Pages/EditPage', {
-        method: 'PUT',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },

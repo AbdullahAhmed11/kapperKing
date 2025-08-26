@@ -1,0 +1,730 @@
+{
+  "navigation": {
+    "brandNamePrimary": "Kapper",
+    "brandNameSecondary": "King",
+    "features": "Features",
+    "pricing": "Pricing",
+    "about": "About",
+    "contact": "Contact",
+    "login": "Log in",
+    "signin": "Sign in",
+    "viewPlansTrial": "View Plans & Start Trial"
+  },
+  "footer": {
+    "product": "Product",
+    "company": "Company",
+    "support": "Support",
+    "helpCenter": "Help Center",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "facebook": "Facebook",
+    "twitter": "Twitter",
+    "instagram": "Instagram",
+    "linkedin": "LinkedIn",
+    "copyright": "All rights reserved."
+  },
+  "landingPage": {
+    "hero": {
+      "headlineLine1": "The complete software",
+      "headlineLine2": "for modern salons",
+      "subheadline": "Streamline your salon operations, boost appointments, and grow your business with our all-in-one platform.",
+      "ctaTrial": "Start free trial",
+      "ctaDemo": "Watch demo"
+    },
+    "featuresSection": {
+      "title": "Everything you need to run your salon",
+      "subtitle": "One platform to manage your entire salon business"
+    },
+    "features": [
+      {
+        "name": "Online Agenda",
+        "description": "Manage your salon schedule efficiently with our intuitive calendar system.",
+        "linkText": "Learn more",
+        "highlights": [
+          "Smart scheduling with conflict prevention",
+          "Staff availability management",
+          "Resource allocation",
+          "Break time management"
+        ]
+      },
+      {
+        "name": "Online Booking",
+        "description": "Let clients book appointments 24/7 through your custom booking website.",
+        "linkText": "Learn more",
+        "highlights": [
+          "Custom booking website",
+          "Real-time availability",
+          "Service selection",
+          "Automated confirmations"
+        ]
+      },
+      {
+        "name": "POS & Inventory",
+        "description": "Complete point of sale system with integrated inventory management.",
+        "linkText": "Learn more",
+        "highlights": [
+          "Easy checkout process",
+          "Stock management",
+          "Product tracking",
+          "Sales analytics"
+        ]
+      },
+      {
+        "name": "Client Management",
+        "description": "Build lasting relationships with comprehensive client profiles.",
+        "linkText": "Learn more",
+        "highlights": [
+          "Detailed profiles",
+          "Service history",
+          "Preferences tracking",
+          "Notes & reminders"
+        ]
+      },
+      {
+        "name": "Marketing Tools",
+        "description": "Grow your business with integrated marketing features.",
+        "linkText": "Learn more",
+        "highlights": [
+          "Email campaigns",
+          "SMS notifications",
+          "Social media integration",
+          "Campaign analytics"
+        ]
+      },
+      {
+        "name": "Analytics",
+        "description": "Make data-driven decisions with detailed analytics and reporting.",
+        "linkText": "Learn more",
+        "highlights": [
+          "Business insights",
+          "Performance metrics",
+          "Revenue tracking",
+          "Growth analytics"
+        ]
+      }
+    ],
+    "benefitsSection": {
+      "title": "Transform your salon business",
+      "subtitle": "Take your salon to the next level with our comprehensive management solution"
+    },
+    "benefits": [
+      {
+        "title": "Boost Efficiency",
+        "description": "Streamline your salon operations and save time with automated scheduling."
+      },
+      {
+        "title": "Increase Revenue",
+        "description": "Grow your business with integrated marketing tools and online booking."
+      },
+      {
+        "title": "Retain Clients",
+        "description": "Build lasting relationships with comprehensive client management."
+      }
+    ],
+    "testimonialsSection": {
+      "title": "Trusted by salons worldwide",
+      "subtitle": "See what our customers have to say"
+    },
+    "testimonials": [
+      {
+        "content": "KapperKing has transformed how we run our salon. The scheduling and client management features are invaluable.",
+        "author": "Sarah Johnson",
+        "role": "Owner, Style Studio"
+      },
+      {
+        "content": "The online booking system has significantly increased our bookings and reduced no-shows.",
+        "author": "Michael Chen",
+        "role": "Manager, Chic Cuts"
+      },
+      {
+        "content": "Finally, a salon software that's both powerful and easy to use. Our staff love it!",
+        "author": "Emma Davis",
+        "role": "Owner, The Hair Lab"
+      }
+    ],
+    "ctaSection": {
+      "headlineLine1": "Ready to transform your salon?",
+      "headlineLine2": "Start your free trial today",
+      "subheadline": "Try KapperKing free for 14 days. No credit card required.",
+      "ctaButton": "View Plans & Start Trial"
+    },
+    "newsletterSection": {
+      "title": "Stay Updated",
+      "subtitle": "Subscribe to our newsletter for the latest news, tips, and special offers for your salon.",
+      "emailPlaceholder": "Enter your email",
+      "namePlaceholder": "Your Name (Optional)",
+      "submitButton": "Subscribe",
+      "submittingButton": "Subscribing..."
+    },
+    "cta": {
+      "button": "Start your free trial",
+      "note": "No credit card required · 14-day free trial · Cancel anytime"
+    },
+    "onlineAgenda": {
+      "hero": {
+        "headlineLine1": "Streamline your salon's",
+        "headlineLine2": "scheduling",
+        "subheadline": "Manage your salon's appointments effortlessly with our intuitive online agenda system.",
+        "ctaTrial": "Start free trial",
+        "ctaDemo": "Watch demo"
+      },
+      "featuresSection": {
+        "title": "Powerful scheduling features",
+        "subtitle": "Everything you need to streamline your salon's scheduling and boost efficiency",
+        "features": [
+          {
+            "title": "Smart Scheduling",
+            "description": "Intelligent appointment scheduling that considers staff availability, service duration, and client preferences."
+          },
+          {
+            "title": "Real-time Updates",
+            "description": "Instantly sync changes across all devices and staff members."
+          },
+          {
+            "title": "Staff Management",
+            "description": "Easily manage staff schedules, breaks, and time off."
+          }
+        ]
+      },
+      "benefitsSection": {
+        "title": "Benefits of our online agenda",
+        "subtitle": "Transform your salon's scheduling with these powerful features",
+        "benefits": [
+          "Reduce no-shows with automatic reminders",
+          "Optimize your schedule with smart booking rules",
+          "Track staff performance and productivity",
+          "View detailed reports and analytics",
+          "Manage multiple locations from one dashboard"
+        ]
+      },
+      "ctaSection": {
+        "headlineLine1": "Ready to streamline your salon?",
+        "headlineLine2": "Start your free trial today.",
+        "subheadline": "Try KapperKing free for 14 days. No credit card required.",
+        "ctaButton": "Start free trial"
+      }
+    },
+    
+  "onlineBooking": {
+    "hero": {
+      "headlineLine1": "Accept appointments",
+      "headlineLine2": "24/7 online",
+      "subheadline": "Let your clients book appointments online anytime, anywhere with our customizable booking system.",
+      "ctaTrial": "Start free trial",
+      "ctaDemo": "Watch demo"
+    },
+    "featuresSection": {
+      "title": "Boost your bookings",
+      "subtitle": "Make it easy for clients to book appointments with your salon"
+    },
+    "features": [
+      {
+        "title": "24/7 Online Booking",
+        "description": "Let clients book appointments anytime, anywhere through your custom booking website."
+      },
+      {
+        "title": "Smart Availability",
+        "description": "Automatically show real-time availability based on your schedule and staff."
+      },
+      {
+        "title": "Instant Confirmations",
+        "description": "Automated booking confirmations and reminders to reduce no-shows."
+      }
+    ],
+    "benefitsSection": {
+      "title": "Benefits of online booking",
+      "subtitle": "Transform your salon's booking experience",
+      "list": [
+        "Reduce phone calls and manual booking",
+        "Fill last-minute cancellations",
+        "Increase booking conversion rate",
+        "Customize booking rules and policies",
+        "Multi-language support"
+      ]
+    },
+    "testimonialsSection": {
+      "title": "Loved by salon owners",
+      "subtitle": "See what our customers have to say"
+    },
+    "testimonials": [
+      {
+        "content": "The online booking system has significantly increased our bookings and reduced no-shows.",
+        "author": "Sarah Johnson",
+        "role": "Owner, Style Studio",
+        "rating": 5
+      },
+      {
+        "content": "Our clients love being able to book appointments 24/7. It's been a game-changer for our salon.",
+        "author": "Michael Chen",
+        "role": "Manager, Chic Cuts",
+        "rating": 5
+      },
+      {
+        "content": "The automated reminders have practically eliminated no-shows. Highly recommended!",
+        "author": "Emma Davis",
+        "role": "Owner, The Hair Lab",
+        "rating": 5
+      }
+    ],
+    "ctaSection": {
+      "headlineLine1": "Ready to boost your bookings?",
+      "headlineLine2": "Start your free trial today.",
+      "subheadline": "Try KapperKing free for 14 days. No credit card required.",
+      "ctaButton": "Start free trial"
+    }
+  },
+  "posInventory": {
+    "hero": {
+      "headlineLine1": "Manage your salon's",
+      "headlineLine2": "retail business",
+      "subheadline": "Complete point of sale and inventory management system designed for salons.",
+      "ctaTrial": "Start free trial",
+      "ctaDemo": "Watch demo"
+    },
+    "stats": [
+      {
+        "title": "Average Transaction Value",
+        "value": "€85",
+        "description": "Per sale"
+      },
+      {
+        "title": "Monthly Revenue",
+        "value": "€12.5K",
+        "description": "From retail sales"
+      },
+      {
+        "title": "Products Managed",
+        "value": "250+",
+        "description": "In inventory"
+      }
+    ],
+    "featuresSection": {
+      "title": "Everything you need to sell",
+      "subtitle": "Powerful tools to manage your retail business efficiently."
+    },
+    "features": [
+      {
+        "title": "Point of Sale",
+        "description": "Fast and intuitive POS system designed specifically for salons."
+      },
+      {
+        "title": "Inventory Management",
+        "description": "Track products, manage stock levels, and automate reordering."
+      },
+      {
+        "title": "Sales Analytics",
+        "description": "Detailed insights into your retail performance and trends."
+      }
+    ],
+    "benefitsSection": {
+      "title": "Benefits of our POS system",
+      "subtitle": "Transform your retail operations",
+      "list": [
+        "Streamline checkout process",
+        "Track product inventory in real-time",
+        "Manage multiple product lines",
+        "Automated stock alerts",
+        "Sales and inventory reporting"
+      ]
+    },
+    "testimonialsSection": {
+      "title": "What our customers say",
+      "subtitle": "Don't just take our word for it"
+    },
+    "testimonials": [
+      {
+        "content": "The POS system has transformed how we handle retail sales. It's fast, reliable, and our staff love it.",
+        "author": "Emma Wilson",
+        "role": "Owner, Glam Studio",
+        "rating": 5
+      },
+      {
+        "content": "Inventory management is a breeze now. No more running out of products unexpectedly.",
+        "author": "David Chen",
+        "role": "Manager, Style House",
+        "rating": 5
+      }
+    ],
+    "ctaSection": {
+      "headlineLine1": "Ready to streamline your retail?",
+      "headlineLine2": "Start your free trial today.",
+      "subheadline": "Try KapperKing free for 14 days. No credit card required.",
+      "ctaButton": "Start free trial"
+    }
+  },
+  "clientManagement": {
+    "hero": {
+      "headlineLine1": "Better client",
+      "headlineLine2": "relationships",
+      "subheadline": "Build lasting relationships with your clients through comprehensive client management tools.",
+      "ctaTrial": "Start free trial",
+      "ctaDemo": "Watch demo"
+    },
+    "stats": [
+      {
+        "title": "Client Retention",
+        "value": "94%",
+        "description": "Average retention rate"
+      },
+      {
+        "title": "Client Growth",
+        "value": "+25%",
+        "description": "Year over year"
+      },
+      {
+        "title": "Active Clients",
+        "value": "2.5K+",
+        "description": "Per salon average"
+      }
+    ],
+    "featuresSection": {
+      "title": "Powerful client management features",
+      "subtitle": "Everything you need to build and maintain strong client relationships."
+    },
+    "features": [
+      {
+        "title": "Client Profiles",
+        "description": "Comprehensive client profiles with service history, preferences, and notes."
+      },
+      {
+        "title": "Loyalty Program",
+        "description": "Built-in loyalty program to reward and retain your best clients."
+      },
+      {
+        "title": "Communication Tools",
+        "description": "Automated notifications, reminders, and personalized marketing."
+      }
+    ],
+    "benefitsSection": {
+      "title": "Benefits of client management",
+      "subtitle": "Transform your client relationships",
+      "list": [
+        "Build stronger client relationships",
+        "Track client preferences and history",
+        "Increase client retention",
+        "Personalize marketing campaigns",
+        "Improve client satisfaction"
+      ]
+    },
+    "testimonialsSection": {
+      "title": "What our customers say",
+      "subtitle": "Don't just take our word for it"
+    },
+    "testimonials": [
+      {
+        "content": "The client management system has helped us provide a much more personalized service. Our clients love it!",
+        "author": "Sarah Thompson",
+        "role": "Owner, Bella Beauty",
+        "rating": 5
+      },
+      {
+        "content": "The loyalty program has significantly improved our client retention. It's been a game-changer for our business.",
+        "author": "Michael Rodriguez",
+        "role": "Manager, Style Hub",
+        "rating": 5
+      }
+    ],
+    "ctaSection": {
+      "headlineLine1": "Ready to improve your client relationships?",
+      "headlineLine2": "Start your free trial today.",
+      "subheadline": "Try KapperKing free for 14 days. No credit card required.",
+      "ctaButton": "Start free trial"
+    }
+  },
+  "marketingTools": {
+    "hero": {
+      "headlineLine1": "Grow your salon",
+      "headlineLine2": "with smart marketing",
+      "subheadline": "Powerful marketing tools to help you attract new clients and keep your existing ones coming back.",
+      "ctaTrial": "Start free trial",
+      "ctaDemo": "Watch demo"
+    },
+    "stats": [
+      {
+        "title": "Open Rate",
+        "value": "45%",
+        "description": "Average email open rate"
+      },
+      {
+        "title": "Client Engagement",
+        "value": "+32%",
+        "description": "Increase in responses"
+      },
+      {
+        "title": "Reach",
+        "value": "5K+",
+        "description": "Active subscribers"
+      }
+    ],
+    "featuresSection": {
+      "title": "Marketing made easy",
+      "subtitle": "Everything you need to market your salon effectively"
+    },
+    "features": [
+      {
+        "title": "Email Marketing",
+        "description": "Create and send beautiful email campaigns to engage your clients."
+      },
+      {
+        "title": "SMS Notifications",
+        "description": "Automated appointment reminders and promotional messages."
+      },
+      {
+        "title": "Campaign Analytics",
+        "description": "Track the success of your marketing efforts with detailed analytics."
+      }
+    ],
+    "benefitsSection": {
+      "title": "Benefits of our marketing tools",
+      "subtitle": "Transform your salon's marketing strategy",
+      "list": [
+        "Increase client retention",
+        "Boost appointment bookings",
+        "Promote new services",
+        "Automate client communications",
+        "Track marketing ROI"
+      ]
+    },
+    "testimonialsSection": {
+      "title": "What our customers say",
+      "subtitle": "Don't just take our word for it"
+    },
+    "testimonials": [
+      {
+        "content": "The automated marketing tools have helped us maintain consistent communication with our clients. It's effortless!",
+        "author": "Emma Wilson",
+        "role": "Owner, Style Studio",
+        "rating": 5
+      },
+      {
+        "content": "Our booking rate increased by 40% after implementing the SMS reminder system. Amazing results!",
+        "author": "David Chen",
+        "role": "Manager, Chic Cuts",
+        "rating": 5
+      }
+    ],
+    "ctaSection": {
+      "headlineLine1": "Ready to grow your business?",
+      "headlineLine2": "Start your free trial today.",
+      "subheadline": "Try KapperKing free for 14 days. No credit card required.",
+      "ctaButton": "Start free trial"
+    }
+  },
+  "analytics": {
+    "hero": {
+      "headlineLine1": "Data-driven",
+      "headlineLine2": "business decisions",
+      "subheadline": "Powerful analytics tools to help you understand and grow your salon business with real-time insights.",
+      "ctaTrial": "Start free trial",
+      "ctaDemo": "Watch demo"
+    },
+    "metrics": [
+      {
+        "name": "Revenue Growth",
+        "value": "+32%",
+        "description": "Year over year increase"
+      },
+      {
+        "name": "Client Retention",
+        "value": "94%",
+        "description": "Monthly retention rate"
+      },
+      {
+        "name": "Appointments",
+        "value": "2.4K",
+        "description": "Monthly bookings"
+      },
+      {
+        "name": "Service Utilization",
+        "value": "87%",
+        "description": "Resource efficiency"
+      }
+    ],
+    "featuresSection": {
+      "title": "Powerful analytics features",
+      "subtitle": "Everything you need to understand and grow your business"
+    },
+    "features": [
+      {
+        "title": "Business Insights",
+        "description": "Comprehensive analytics dashboard with key business metrics."
+      },
+      {
+        "title": "Performance Tracking",
+        "description": "Track staff performance, service popularity, and revenue trends."
+      },
+      {
+        "title": "Client Analytics",
+        "description": "Understand client behavior, preferences, and retention rates."
+      }
+    ],
+    "benefitsSection": {
+      "title": "Transform your business with data",
+      "subtitle": "Make informed decisions and drive growth"
+    },
+    "benefits": [
+      {
+        "title": "Data-Driven Decisions",
+        "description": "Make informed business decisions based on real-time data and insights."
+      },
+      {
+        "title": "Revenue Optimization",
+        "description": "Identify opportunities to increase revenue and reduce costs."
+      },
+      {
+        "title": "Staff Performance",
+        "description": "Track and improve staff productivity and service quality."
+      }
+    ],
+    "ctaSection": {
+      "headlineLine1": "Ready to grow with data?",
+      "headlineLine2": "Start your free trial today",
+      "subheadline": "Try KapperKing free for 14 days. No credit card required.",
+      "ctaButton": "Start free trial"
+    }
+  },
+  "pricing": {
+    "header": {
+      "title": "Simple, transparent pricing",
+      "subtitle": "Start with a 14-day free trial. No credit card required.",
+      "billingToggle": {
+        "monthly": "Monthly billing",
+        "annual": "Annual billing",
+        "saveLabel": "Save 15%"
+      }
+    },
+    "tiers": {
+      "mostPopular": "Most popular",
+      "cta": "Start Free Trial",
+      "priceUnit": {
+        "year": "/yr",
+        "month": "/mo"
+      },
+      "includedTitle": "What's included",
+      "salonLimit": {
+        "unlimited": "Unlimited salons",
+        "single": "1 Salon included",
+        "multiple": "Up to {{count}} salons"
+      }
+    },
+    "enterprise": {
+      "title": "Enterprise features",
+      "subtitle": "Need something more? Our enterprise plan includes additional features for larger salons and chains.",
+      "cta": "Contact sales",
+      "features": {
+        "multipleLocations": "Multiple locations",
+        "customBranding": "Custom branding",
+        "prioritySupport": "Priority support",
+        "advancedAnalytics": "Advanced analytics"
+      }
+    }
+  },
+  "contact": {
+    "hero": {
+      "title": "Get in touch",
+      "subtitle": "Have questions about KapperKing? We're here to help you find the perfect solution for your salon."
+    },
+    "methods": {
+      "email": {
+        "name": "Email",
+        "value": "support@kapperking.com"
+      },
+      "phone": {
+        "name": "Phone",
+        "value": "+31 (0) 20 123 4567"
+      },
+      "chat": {
+        "name": "Chat",
+        "value": "Available 24/7"
+      }
+    },
+    "formSection": {
+      "title": "Let's discuss your salon needs",
+      "subtitle": "Fill out the form and our team will get back to you within 24 hours."
+    },
+    "supportFeatures": {
+      "support": {
+        "name": "24/7 Support",
+        "description": "Get help whenever you need it"
+      },
+      "team": {
+        "name": "Dedicated Team",
+        "description": "Personal account manager for your business"
+      },
+      "channels": {
+        "name": "Multiple Channels",
+        "description": "Reach us through email, phone, or chat"
+      }
+    },
+    "links": {
+      "pricing": "View pricing plans",
+      "features": "Explore features"
+    },
+    "form": {
+      "fields": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone (optional)",
+        "businessType": {
+          "label": "Business Type",
+          "options": {
+            "salon": "Hair Salon",
+            "barbershop": "Barbershop",
+            "spa": "Spa",
+            "other": "Other"
+          }
+        },
+        "staffSize": {
+          "label": "Staff Size",
+          "options": {
+            "1-5": "1-5 employees",
+            "6-10": "6-10 employees",
+            "11-20": "11-20 employees",
+            "20+": "20+ employees"
+          }
+        },
+        "subject": "Subject",
+        "message": "Message"
+      },
+      "submit": {
+        "idle": "Send message",
+        "loading": "Sending..."
+      },
+      "validation": {
+        "name": "Name must be at least 2 characters",
+        "email": "Invalid email address",
+        "subject": "Subject must be at least 5 characters",
+        "message": "Message must be at least 10 characters"
+      },
+      "feedback": {
+        "success": "Message sent successfully!",
+        "error": "Failed to send message"
+      }
+    }
+  },
+   "termsOfService": {
+    "title": "Terms of Service",
+    "subtitle": "Please read these terms carefully before using our platform."
+  },
+    "about": {
+    "title": "About KapperKing",
+    "subtitle": "The complete software solution for modern salons."
+  },
+    "privacyPolicy": {
+    "title": "Privacy Policy",
+    "subtitle": "We respect your privacy and are committed to protecting your personal data."
+  }
+
+
+
+
+
+
+
+
+
+
+}
+
+}
+

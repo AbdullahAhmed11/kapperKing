@@ -1,24 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit2, Trash2, Mail, MessageSquare, BarChart2, Send } from 'lucide-react'; 
+import { Search, Plus, Trash2, Send, Edit } from 'lucide-react'; // Added Edit icon
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useCampaignStore, selectAllCampaigns, Campaign, CampaignFormData } from '@/lib/store/campaigns'; 
-import { useSubscriberStore, selectSubscriberCount, selectAllSubscribers, Subscriber } from '@/lib/store/subscribers'; 
+import { useCampaignStore, Campaign, CampaignFormData } from '@/lib/store/campaigns'; 
+import { Subscriber } from '@/lib/store/subscribers'; 
 import { toast } from 'sonner'; 
 import { CampaignForm } from '@/components/platform/forms/CampaignForm'; 
 import { SubscriberList } from '@/components/platform/marketing/SubscriberList'; 
 import axios from 'axios';
+
 const API_BASE_URL = 'https://kapperking.runasp.net/api/SuperAdmin';
 import { jwtDecode } from 'jwt-decode';
 import Cookies from 'js-cookie';
 import { useNavigate } from 'react-router-dom';
+
 interface MyJwtPayload {
-      Id?: string;
-      Role?: string;
-      [key: string]: any;
-    }
+  Id?: string;
+  Role?: string;
+  [key: string]: any;
+}
+
 export default function MarketingManagement() {
- const navigate = useNavigate();
+  const navigate = useNavigate();
   const token = Cookies.get('salonUser');
   const decoded: MyJwtPayload | undefined = token ? jwtDecode<MyJwtPayload>(token) : undefined;
 
@@ -104,43 +108,24 @@ export default function MarketingManagement() {
 
   const addCampaign = useCampaignStore((state) => state.addCampaign);
   const updateCampaign = useCampaignStore((state) => state.updateCampaign);
-  const deleteCampaign = useCampaignStore((state) => state.deleteCampaign);
 
-  const sentCampaigns = campaigns.filter(c => c.status === 'sent');
-  const totalOpened = sentCampaigns.reduce((sum, c) => sum + (c.stats?.opened ?? 0), 0);
-  const totalSent = sentCampaigns.reduce((sum, c) => sum + (c.stats?.sent ?? 0), 0);
-  const totalClicked = sentCampaigns.reduce((sum, c) => sum + (c.stats?.clicked ?? 0), 0);
+  // ✅ updated delete function
+// ✅ updated delete function using sonner toast
+const handleDelete = async (id: string, name: string) => {
+  if (window.confirm(`Are you sure you want to delete the "${name}" campaign?`)) {
+    try {
+      await axios.delete(`${API_BASE_URL}/DeleteCampign`, {
+        params: { campaignId: id },
+      });
 
-  const averageOpenRate = totalSent > 0 ? (totalOpened / totalSent) * 100 : 0;
-  const clickRate = totalOpened > 0 ? (totalClicked / totalOpened) * 100 : 0;
-
-  const filteredCampaigns = campaigns.filter(campaign =>
-    campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    campaign.subject.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete the "${name}" campaign?`)) {
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/DeleteCampign?campaignId=${id}`,
-          {
-            method: 'DELETE',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        toast.success(`Campaign "${name}" deleted successfully`);
-        fetchCampaigns();
-      } catch (err) {
-        toast.error('Failed to delete campaign');
-        console.error('Delete error:', err);
-      }
+      toast.success(`Campaign "${name}" deleted successfully ✅`);
+      fetchCampaigns(); // refresh campaigns list
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      toast.error(err.response?.data?.message || '❌ Failed to delete campaign');
     }
-  };
+  }
+};
 
   const handleSendEmail = async (campaignId: string, campaignName: string) => {
     if (allsubscribers.length === 0) {
@@ -154,7 +139,7 @@ export default function MarketingManagement() {
 
     if (confirmed) {
       try {
-        const res = await axios.post(`${API_BASE_URL}/SendMessageToSubscribers`, {
+        await axios.post(`${API_BASE_URL}/SendMessageToSubscribers`, {
           campaignId: Number(campaignId),
           all: true,
           emails,
@@ -166,17 +151,37 @@ export default function MarketingManagement() {
       }
     }
   };
-
-  const handleCampaignSubmit = async (data: CampaignFormData) => {
+ const handleEdit = (campaign: Campaign) => {
+    setEditingCampaign(campaign);
+    setShowCampaignForm(true);
+  };
+  // const handleCampaignSubmit = async (data: CampaignFormData) => {
+  //   if (editingCampaign) {
+  //     updateCampaign(editingCampaign.id, data);
+  //     setEditingCampaign(null);
+  //   } else {
+  //     addCampaign(8, data);
+  //     await fetchCampaigns();
+  //   }
+  //   setShowCampaignForm(false);
+  // };
+ const handleCampaignSubmit = async (data: CampaignFormData) => {
     if (editingCampaign) {
-      updateCampaign(editingCampaign.id, data);
+      // For editing, we're now using the API directly in CampaignForm
+      // So we just need to refresh the list
+      await fetchCampaigns();
       setEditingCampaign(null);
     } else {
+      // For creating new campaign
       addCampaign(8, data);
       await fetchCampaigns();
     }
     setShowCampaignForm(false);
   };
+  const filteredCampaigns = campaigns.filter(campaign =>
+    campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    campaign.subject.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -185,7 +190,6 @@ export default function MarketingManagement() {
           <h1 className="text-2xl font-semibold text-gray-900">Marketing Management</h1>
           <p className="mt-1 text-sm text-gray-500">Create and manage marketing campaigns and subscribers</p>
         </div>
-        {/* Only show "New Campaign" button when on campaigns tab */}
         {activeTab === 'campaigns' && (
           <Button onClick={() => { setEditingCampaign(null); setShowCampaignForm(true); }}>
             <Plus className="h-4 w-4 mr-2" />
@@ -194,7 +198,7 @@ export default function MarketingManagement() {
         )}
       </div>
 
-     <div className="border-b border-gray-200">
+      <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8 px-6" aria-label="Tabs">
           <button
             onClick={() => setActiveTab('campaigns')}
@@ -247,7 +251,7 @@ export default function MarketingManagement() {
                   {filteredCampaigns.map((campaign) => (
                     <tr key={campaign.id}>
                       <td className="px-6 py-4">{campaign.name}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -256,6 +260,25 @@ export default function MarketingManagement() {
                           <Send className="h-4 w-4 mr-1" />
                           Send Email
                         </Button>
+                 <Button
+  variant="destructive"
+  size="sm"
+  onClick={() => handleDelete(campaign.id, campaign.name)}
+>
+  <Trash2 className="h-4 w-4 mr-1" />
+  Delete
+</Button>
+
+<Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(campaign)}
+                          className="flex items-center gap-1"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Edit
+                        </Button>
+
                       </td>
                     </tr>
                   ))}
@@ -270,16 +293,16 @@ export default function MarketingManagement() {
         <SubscriberList />
       )}
 
-      <CampaignForm
-        key={editingCampaign?.id || 'new'}
-        open={showCampaignForm}
-        onClose={() => {
-          setShowCampaignForm(false);
-          setEditingCampaign(null);
-        }}
-        onSubmit={handleCampaignSubmit}
-        initialData={editingCampaign}
-      />
+    <CampaignForm
+  open={showCampaignForm}
+  onClose={() => {
+    setShowCampaignForm(false);
+    setEditingCampaign(null);
+  }}
+  onSubmit={handleCampaignSubmit}
+  initialData={editingCampaign}
+  onEditSuccess={fetchCampaigns} // Refresh the campaigns list after edit
+/>
     </div>
   );
 }
